@@ -111,7 +111,7 @@ def main(spark, userID):
     
     query_2.createOrReplaceTempView("query_2")
     
-    query_3 = spark.sql("SELECT recording_msid, cum_rating/(num_users+10) as avg_rating FROM query_2 ORDER BY avg_rating LIMIT 100")
+    query_3 = spark.sql("SELECT recording_msid, cum_rating/(num_users+10) as avg_rating FROM query_2 ORDER BY avg_rating DESC LIMIT 100")
     query_3.show()
 
 # Only enter this block if we're in main

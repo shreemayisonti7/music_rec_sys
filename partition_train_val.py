@@ -64,7 +64,6 @@ def main(spark, userID):
     # print("number of records in new_val:")
     # print(new_val.count())
 
-
 ################################################################################################################################
 #For large dataset
     print("--------------------------Starting splitting of large file-------------------------")

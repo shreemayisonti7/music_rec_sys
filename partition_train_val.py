@@ -69,14 +69,17 @@ def main(spark, userID):
 
     start_time = time.time()
     train_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train.parquet')
+    print("Counting train elements", train_interactions.count())
 
     window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
     percent_ranked = train_interactions.select('*', percent_rank().over(window_partition_by_users).alias('percent_rank'))
 
     train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
-    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite", partitionBy='user_id')
+    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite")
+                            # , partitionBy='user_id')
     val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
-    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite", partitionBy='user_id')
+    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite")
+                          # , partitionBy='user_id')
 
     new_train = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
     new_val = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')

@@ -16,8 +16,6 @@ def main(spark, userID):
 
     #Perform the same on large files later
     train_small_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train_small.parquet')
-    # train_small_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train_small.parquet')
-    # train_small_users = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/users_train_small.parquet')
     print("number of records in train_small_interactions:")
     print(train_small_interactions.count())
 

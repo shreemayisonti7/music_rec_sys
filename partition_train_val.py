@@ -21,7 +21,7 @@ def main(spark, userID):
     print('Printing train_small_interactions inferred schema')
     train_small_interactions.printSchema()
     train_small_interactions.show(10)
-    train_small_interactions.info()
+    print(type(train_small_interactions))
 
 
 

@@ -99,7 +99,7 @@ def main(spark, userID):
 #Baseline model
 
     train_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_small.parquet')
-    train_set.sort("recording_msid").show()
+    train_set.sort("recording_msid")
     
     train_set.createOrReplaceTempView('train_set')
     
@@ -107,7 +107,7 @@ def main(spark, userID):
 #     query_1.show()
 
     query_2 = spark.sql("SELECT recording_msid, COUNT(*) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set GROUP BY recording_msid ORDER BY cum_rating,num_users DESC LIMIT 100")
-    #query_2.show()
+    query_2.show()
     
     query_2.createOrReplaceTempView("query_2")
     

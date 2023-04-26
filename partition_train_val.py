@@ -15,8 +15,8 @@ def main(spark, userID):
     #Perform the same on large files later
 
     train_small_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train_small.parquet')
-    train_small_tracks = spark.read.json(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train_small.parquet')
-    train_small_users = spark.read.json(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/users_train_small.parquet')
+    train_small_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train_small.parquet')
+    train_small_users = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/users_train_small.parquet')
 
     print('Printing train_small_interactions inferred schema')
     train_small_interactions.printSchema()

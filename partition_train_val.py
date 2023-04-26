@@ -3,6 +3,8 @@
 
 import os
 from pyspark.sql import SparkSession
+from pyspark.sql import Window
+from pyspark.sql.functions import percent_rank
 
 
 def main(spark, userID):
@@ -22,6 +24,8 @@ def main(spark, userID):
     train_small_interactions.printSchema()
     train_small_interactions.show(10)
     print(type(train_small_interactions))
+    window_partition_by_users = Window.partitionby('user_id').orderby('timestamp')
+    train_small_interactions.select('*', percent_rank().over(window_partition_by_users).alias('percent_rank')).show(50)
 
 
 

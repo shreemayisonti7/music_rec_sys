@@ -103,8 +103,11 @@ def main(spark, userID):
     
     train_set.createOrReplaceTempView('train_set')
     
-    query_1 = spark.sql("SELECT COUNT(user_id) as ranking FROM train_set GROUP BY recording_msid")
-    query_1.show()
+#     query_1 = spark.sql("SELECT COUNT(user_id) as ranking FROM train_set GROUP BY recording_msid")
+#     query_1.show()
+
+    query_2 = spark.sql("SELECT recording_msid, COUNT(*) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set GROUP BY recording_msid")
+    query_2.show()
 
 # Only enter this block if we're in main
 if __name__ == "__main__":

@@ -109,7 +109,7 @@ def main(spark, userID):
     query_2 = spark.sql("SELECT recording_msid, COUNT(*) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set GROUP BY recording_msid")
     query_2.show()
     
-    query_3 = spark.sql("SELECT recording_msid, cum_rating/(num_users+10) as avg_rating FROM query_2 ORDER BY AVG_RATING")
+    query_3 = spark.sql("SELECT recording_msid, cum_rating/(num_users+10) as avg_rating FROM query_2 ORDER BY avg_rating LIMIT 100")
     query_3.show()
 
 # Only enter this block if we're in main

@@ -75,11 +75,9 @@ def main(spark, userID):
     percent_ranked = train_interactions.select('*', percent_rank().over(window_partition_by_users).alias('percent_rank'))
 
     train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
-    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite")
-                            # , partitionBy='user_id')
+    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite", partitionBy='recording_msid')
     val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
-    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite")
-                          # , partitionBy='user_id')
+    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite", partitionBy='recording_msid')
 
     new_train = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
     new_val = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')

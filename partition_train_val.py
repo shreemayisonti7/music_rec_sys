@@ -105,16 +105,20 @@ def main(spark, userID):
     
 #     query_1 = spark.sql("SELECT COUNT(user_id) as ranking FROM train_set GROUP BY recording_msid")
 #     query_1.show()
+    beta_g = 10
+    beta_i = 100
+
+    mu = 1/(1+beta_g)
 
     query_2 = spark.sql("SELECT recording_msid, COUNT(user_id) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set GROUP BY recording_msid ORDER BY cum_rating DESC LIMIT 100")
-    print("Ordered table")
-    query_2.show()
+#     print("Ordered table")
+#     query_2.show()
     
-    #query_2.createOrReplaceTempView("query_2")
+    query_2.createOrReplaceTempView("query_2")
     
-#     query_3 = spark.sql("SELECT recording_msid, cum_rating/(num_users+10) as avg_rating FROM query_2 ORDER BY avg_rating DESC LIMIT 100")
-#     query_3.show()
-    #query_4 = spark.sql("SELECT recording_msid
+    query_3 = spark.sql("SELECT recording_msid, (cum_rating-10)/(num_users+100) as avg_rating FROM query_2 ORDER BY avg_rating DESC LIMIT 100")
+    query_3.show()
+
 
 # Only enter this block if we're in main
 if __name__ == "__main__":

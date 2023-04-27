@@ -46,7 +46,7 @@ def main(spark, userID):
     #     f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
 
     baseline_output.show()
-    # baseline_output.createOrReplaceTempView('baseline_output')
+    baseline_output.createOrReplaceTempView('baseline_output')
 
     ###################################################################################################################
     # evaluation
@@ -59,7 +59,7 @@ def main(spark, userID):
     # print(ground_truth)
 
     print("Counting distinct user_id in val set")
-    print(val_set.agg(F.countDistinct('user_id')))
+    val_set.agg(F.countDistinct('user_id')).show()
 
     val_set.select('user_id').distinct().show()
 

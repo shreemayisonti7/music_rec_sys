@@ -43,15 +43,17 @@ def main(spark, userID):
     ######################################################################################################################
     #evaluation
     val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
-    val_f.show()
+    #val_f.show()
     val_f.createOrReplaceTempView('val_f')
-    #ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
-    #print("Ground truth")
+    ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
+    print("Ground truth")
     #ground_truth.show()
+    print(ground_truth)
     
     prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x:x).collect()
     print("Prediction")
-    prediction.show()
+    #prediction.show()
+    print(prediction)
     
     end=time.time()
     

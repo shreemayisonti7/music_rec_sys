@@ -16,20 +16,23 @@ def main(spark, userID):
     userID : string, userID to find files in HDFS
     '''
     # #################################################################################################################
-    #Baseline model
+    # Baseline model
     start = time.time()
+
+    train_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
+    train_set = train_set.repartition("recording_msid")
+    train_set.createOrReplaceTempView('train_set')
+
     val_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')
     val_set = val_set.repartition("recording_msid")
-    # val_set.sort("recording_msid")
+    # val_set.createOrReplaceTempView('val_set')
 
-    val_set.createOrReplaceTempView('val_set')
-    
     mu = [0.99, 0.909, 0.5, 0.09, 0.009, 0.0009]
     beta_i = [0.01, 0.1, 1, 10, 100, 1000]
     # mu = 1/(1+beta_g)
-    
+
     grouped_result = spark.sql(
-        'SELECT recording_msid, COUNT(user_id) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM val_set '
+        'SELECT recording_msid, COUNT(user_id) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set '
         'GROUP BY recording_msid ORDER BY cum_rating DESC LIMIT 100')
 
     grouped_result.createOrReplaceTempView("grouped_result")
@@ -37,29 +40,32 @@ def main(spark, userID):
     baseline_output = spark.sql(
         f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
         f'ORDER BY avg_rating DESC LIMIT 100')
+
+    # baseline_output = spark.sql(
+    #     f'SELECT recording_msid FROM grouped_result '
+    #     f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
+
     baseline_output.show()
-    baseline_output.createOrReplaceTempView('baseline_output')
-    
-    ######################################################################################################################
-    #evaluation
+    # baseline_output.createOrReplaceTempView('baseline_output')
+
+    ###################################################################################################################
+    # evaluation
     val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
-    #val_f.show()
-    val_f.createOrReplaceTempView('val_f')
-#     ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
-#     print("Ground truth")
-#     #ground_truth.show()
-#     print(ground_truth)
-    
-    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x:x).collect()
-    print("Prediction")
-    #prediction.show()
-    print(prediction)
-    
-    end=time.time()
-    
-    print(f"Total time for evaluation:{end-start}")
-    
-    
+    print("printing validation recording ids' lists for various users")
+    val_f.show()
+    # val_f.createOrReplaceTempView('val_f')
+    #     ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
+    #     print("Ground truth")
+    #     #ground_truth.show()
+    #     print(ground_truth)
+
+    prediction = baseline_output.select('recording_msid').collect()  # .flatMap(lambda x:x)
+    print("Printing top 100 recording msids")
+    prediction.show()
+
+    end = time.time()
+    print(f"Total time for evaluation:{end - start}")
+
 
 # Only enter this block if we're in main
 if __name__ == "__main__":

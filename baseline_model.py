@@ -37,12 +37,14 @@ def main(spark, userID):
     # #################################################################################################################
     # Baseline model
     # start = time.time()
+    train_file = f'hdfs:/user/ss16270_nyu_edu/train_small.parquet'
+    val_file = f'hdfs:/user/ss16270_nyu_edu/val_small.parquet'
 
-    train_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
+    train_set = spark.read.parquet(train_file)
     train_set = train_set.repartition("recording_msid")
     train_set.createOrReplaceTempView('train_set')
 
-    val_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')
+    val_set = spark.read.parquet(val_file)
     val_set = val_set.repartition("user_id")
     # val_set.createOrReplaceTempView('val_set')
 

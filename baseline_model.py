@@ -42,7 +42,7 @@ def main(spark, userID):
     
     ######################################################################################################################
     #evaluation
-    val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid')).alias('unique_recordings')
+    val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
     val_f.createOrReplaceTempView('val_f')
     ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
     print("Ground truth")

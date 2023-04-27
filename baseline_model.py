@@ -12,7 +12,7 @@ import time
 def baseline_evaluation(baseline_predictions, test_set):
     print("Counting distinct user_id in val set")
     test_set.agg(F.countDistinct('user_id')).show()
-    users = test_set.select('user_id').distinct().collect()
+    users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
     print(users, len(users))
     # user = users[0]
     # current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().show()

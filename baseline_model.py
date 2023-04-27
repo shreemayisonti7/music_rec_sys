@@ -5,9 +5,20 @@ import os
 
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
+from pyspark.mllib.evaluation import RankingMetrics
 
 import time
 
+def baseline_evaluation(baseline_predictions, test_set):
+    print("Counting distinct user_id in val set")
+    test_set.agg(F.countDistinct('user_id')).show()
+    users = test_set.select('user_id').distinct().show()
+    user = users[0]
+    current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().show()
+    print(current_user_rmsids)
+    metrics = RankingMetrics([(baseline_predictions, current_user_rmsids)])
+    print(metrics.meanAveragePrecision)
+    return
 
 def main(spark, userID):
     '''
@@ -37,16 +48,21 @@ def main(spark, userID):
 
     grouped_result.createOrReplaceTempView("grouped_result")
 
-    baseline_output = spark.sql(
-        f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
-        f'ORDER BY avg_rating DESC LIMIT 100')
-
     # baseline_output = spark.sql(
-    #     f'SELECT recording_msid FROM grouped_result '
-    #     f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
+    #     f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
+    #     f'ORDER BY avg_rating DESC LIMIT 100')
+
+    baseline_output = spark.sql(
+        f'SELECT recording_msid FROM grouped_result '
+        f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
 
     baseline_output.show()
-    # baseline_output.createOrReplaceTempView('baseline_output')
+    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
+    print("Printing top 100 recording msids")
+    print(prediction)
+
+    map = baseline_evaluation(prediction, val_set)
+    print(map)
 
     ###################################################################################################################
     # evaluation
@@ -57,15 +73,6 @@ def main(spark, userID):
     # ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
     # print("Ground truth")
     # print(ground_truth)
-
-    print("Counting distinct user_id in val set")
-    val_set.agg(F.countDistinct('user_id')).show()
-
-    val_set.select('user_id').distinct().show()
-
-    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
-    print("Printing top 100 recording msids")
-    print(prediction)
 
     # end = time.time()
     # print(f"Total time for evaluation:{end - start}")

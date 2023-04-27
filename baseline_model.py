@@ -16,7 +16,7 @@ def baseline_evaluation(spark, baseline_predictions, test_set):
     users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
     print(len(users))
     list_tuples = []
-    for user in users[0]:
+    for user in users:
         current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
             lambda x: x).collect()
         list_tuples.append((baseline_predictions, current_user_rmsids))
@@ -25,7 +25,7 @@ def baseline_evaluation(spark, baseline_predictions, test_set):
     print(metrics.meanAveragePrecision)
     print("precision at 100", metrics.precisionAt(100))
     print("precision at 15", metrics.precisionAt(15))
-    return
+    return metrics.meanAveragePrecision
 
 
 def main(spark, userID):
@@ -46,31 +46,31 @@ def main(spark, userID):
     val_set = val_set.repartition("user_id")
     # val_set.createOrReplaceTempView('val_set')
 
-    mu = [0.99, 0.909, 0.5, 0.09, 0.009, 0.0009]
-    beta_i = [0.01, 0.1, 1, 10, 100, 1000]
-    # mu = 1/(1+beta_g)
+    # beta_g = [0.01, 0.1, 1, 10, 100, 1000, 10000]
+    # beta_i = [0.01, 0.1, 1, 10, 100, 1000, 10000]
+    beta_g = [1000]
+    beta_i = [1000]
 
-    grouped_result = spark.sql(
-        'SELECT recording_msid, COUNT(user_id) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set '
-        'GROUP BY recording_msid ORDER BY cum_rating DESC LIMIT 100')
+    for i in range(len(beta_g)):
+        mu = 1/(1+beta_g[i])
+        grouped_result = spark.sql(
+            'SELECT recording_msid, COUNT(user_id) as cum_rating, COUNT(DISTINCT(user_id)) as num_users FROM train_set '
+            'GROUP BY recording_msid ORDER BY cum_rating DESC LIMIT 100')
 
-    grouped_result.createOrReplaceTempView("grouped_result")
+        grouped_result.createOrReplaceTempView("grouped_result")
+        # baseline_output = spark.sql(
+        #     f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
+        #     f'ORDER BY avg_rating DESC LIMIT 100')
+        baseline_output = spark.sql(
+            f'SELECT recording_msid FROM grouped_result '
+            f'ORDER BY (cum_rating - {mu})/(num_users + {beta_i[i]}) DESC LIMIT 100')
+        # baseline_output.show()
+        prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
+        print("Printing top 100 recording msids")
+        print(prediction)
 
-    # baseline_output = spark.sql(
-    #     f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
-    #     f'ORDER BY avg_rating DESC LIMIT 100')
-
-    baseline_output = spark.sql(
-        f'SELECT recording_msid FROM grouped_result '
-        f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
-
-    # baseline_output.show()
-    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
-    print("Printing top 100 recording msids")
-    print(prediction)
-
-    baseline_evaluation(spark, prediction, val_set)
-    # print(map)
+        map = baseline_evaluation(spark, prediction, val_set)
+        print(map, beta_g[i], beta_i[i])
 
     ###################################################################################################################
     # evaluation

@@ -59,15 +59,17 @@ def main(spark, userID):
     # print(ground_truth)
 
     print("Counting distinct user_id in val set")
-    val_set.agg(F.countDistinct('user_id'))
+    print(val_set.agg(F.countDistinct('user_id')))
 
-    prediction = baseline_output.select('recording_msid').collect()  # .flatMap(lambda x:x)
+    val_set.select('user_id').distinct().show()
+
+    prediction = baseline_output.select('recording_msid').flatMap(lambda x: x).collect()
     print("Printing top 100 recording msids")
     print(prediction)
 
     # end = time.time()
     # print(f"Total time for evaluation:{end - start}")
-
+    print("The end")
 
 # Only enter this block if we're in main
 if __name__ == "__main__":

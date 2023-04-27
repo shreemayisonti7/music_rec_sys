@@ -12,8 +12,8 @@ import time
 def baseline_evaluation(baseline_predictions, test_set):
     print("Counting distinct user_id in val set")
     test_set.agg(F.countDistinct('user_id')).show()
-    users = test_set.select('user_id').distinct().show()
-    print(users)
+    users = test_set.select('user_id').distinct().collect()
+    print(users, len(users))
     # user = users[0]
     # current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().show()
     # print(current_user_rmsids)
@@ -57,7 +57,7 @@ def main(spark, userID):
         f'SELECT recording_msid FROM grouped_result '
         f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
 
-    baseline_output.show()
+    # baseline_output.show()
     prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
     print("Printing top 100 recording msids")
     print(prediction)

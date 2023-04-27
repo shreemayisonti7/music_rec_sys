@@ -9,7 +9,7 @@ from pyspark.mllib.evaluation import RankingMetrics
 
 import time
 
-def baseline_evaluation(baseline_predictions, test_set):
+def baseline_evaluation(spark, baseline_predictions, test_set):
     print("Counting distinct user_id in val set")
     test_set.agg(F.countDistinct('user_id')).show()
     users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
@@ -18,7 +18,8 @@ def baseline_evaluation(baseline_predictions, test_set):
     current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
         lambda x: x).collect()
     print(current_user_rmsids)
-    metrics = RankingMetrics(baseline_predictions, current_user_rmsids)
+    prediction_Labels = spark.parallelize([(baseline_predictions, current_user_rmsids)])
+    metrics = RankingMetrics(prediction_Labels)
     print(metrics.meanAveragePrecision)
     return
 
@@ -63,7 +64,7 @@ def main(spark, userID):
     print("Printing top 100 recording msids")
     print(prediction)
 
-    baseline_evaluation(prediction, val_set)
+    baseline_evaluation(spark, prediction, val_set)
     # print(map)
 
     ###################################################################################################################

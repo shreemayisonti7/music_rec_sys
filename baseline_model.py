@@ -15,17 +15,16 @@ def baseline_evaluation(spark, baseline_predictions, test_set):
     test_set.agg(F.countDistinct('user_id')).show()
     users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
     print(len(users))
-    list_tuples = []
+    map_list = []
     for user in users:
         current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
             lambda x: x).collect()
-        list_tuples.append((baseline_predictions, current_user_rmsids))
-    prediction_Labels = spark.sparkContext.parallelize(list_tuples)
-    metrics = RankingMetrics(prediction_Labels)
-    print(metrics.meanAveragePrecision)
-    print("precision at 100", metrics.precisionAt(100))
-    print("precision at 15", metrics.precisionAt(15))
-    return metrics.meanAveragePrecision
+        prediction_Labels = spark.sparkContext.parallelize([(baseline_predictions, current_user_rmsids)])
+        metrics = RankingMetrics(prediction_Labels)
+        map_list.append(metrics.meanAveragePrecision)
+    MAP_final = sum(map_list)/len(users)
+    print("Final MAP:", MAP_final )
+    return MAP_final
 
 
 def main(spark, userID):
@@ -100,3 +99,5 @@ if __name__ == "__main__":
 
     # Calling main
     main(spark, userID)
+
+

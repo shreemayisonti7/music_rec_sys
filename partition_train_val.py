@@ -71,9 +71,6 @@ def main(spark, userID):
     train_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train.parquet')
     print("Counting train elements", train_interactions.count())
 
-    print("Describe stats")
-    print(train_interactions.describe().show())
-
     print("User null count")
     print(train_interactions.filter(train_interactions.user_id.isNull()).count())
 

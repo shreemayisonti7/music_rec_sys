@@ -17,14 +17,14 @@ def main(spark, userID):
     '''
     # #################################################################################################################
     # Baseline model
-    start = time.time()
+    # start = time.time()
 
     train_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
     train_set = train_set.repartition("recording_msid")
     train_set.createOrReplaceTempView('train_set')
 
     val_set = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')
-    val_set = val_set.repartition("recording_msid")
+    val_set = val_set.repartition("user_id")
     # val_set.createOrReplaceTempView('val_set')
 
     mu = [0.99, 0.909, 0.5, 0.09, 0.009, 0.0009]
@@ -50,20 +50,23 @@ def main(spark, userID):
 
     ###################################################################################################################
     # evaluation
-    val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
-    print("printing validation recording ids' lists for various users")
-    val_f.show()
-    val_f.createOrReplaceTempView('val_f')
-    ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
-    print("Ground truth")
-    print(ground_truth)
+    # val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
+    # print("printing validation recording ids' lists for various users")
+    # val_f.show()
+    # val_f.createOrReplaceTempView('val_f')
+    # ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
+    # print("Ground truth")
+    # print(ground_truth)
+
+    print("Counting distinct user_id in val set")
+    val_set.agg(F.countDistinct('user_id'))
 
     prediction = baseline_output.select('recording_msid').collect()  # .flatMap(lambda x:x)
     print("Printing top 100 recording msids")
     print(prediction)
 
-    end = time.time()
-    print(f"Total time for evaluation:{end - start}")
+    # end = time.time()
+    # print(f"Total time for evaluation:{end - start}")
 
 
 # Only enter this block if we're in main

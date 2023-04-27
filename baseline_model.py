@@ -13,11 +13,12 @@ def baseline_evaluation(baseline_predictions, test_set):
     print("Counting distinct user_id in val set")
     test_set.agg(F.countDistinct('user_id')).show()
     users = test_set.select('user_id').distinct().show()
-    user = users[0]
-    current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().show()
-    print(current_user_rmsids)
-    metrics = RankingMetrics([(baseline_predictions, current_user_rmsids)])
-    print(metrics.meanAveragePrecision)
+    print(users)
+    # user = users[0]
+    # current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().show()
+    # print(current_user_rmsids)
+    # metrics = RankingMetrics([(baseline_predictions, current_user_rmsids)])
+    # print(metrics.meanAveragePrecision)
     return
 
 def main(spark, userID):
@@ -61,8 +62,8 @@ def main(spark, userID):
     print("Printing top 100 recording msids")
     print(prediction)
 
-    map = baseline_evaluation(prediction, val_set)
-    print(map)
+    baseline_evaluation(prediction, val_set)
+    # print(map)
 
     ###################################################################################################################
     # evaluation

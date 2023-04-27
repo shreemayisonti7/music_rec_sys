@@ -72,30 +72,44 @@ def main(spark, userID):
     train_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train.parquet')
     print("Counting train elements", train_interactions.count())
 
-    window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
-    percent_ranked = train_interactions.select('*', percent_rank().over(window_partition_by_users).alias('percent_rank'))
+    print("Describe stats")
+    print(train_interactions.describe().show())
 
-    train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
-    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite")
-                            # , partitionBy='recording_msid')
-    val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
-    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite")
-                          # , partitionBy='recording_msid')
+    print("User null count")
+    print(train_interactions.filter(train_interactions.user_id.isNull()).count())
 
-    new_train = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
-    new_val = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')
+    print("Timestamp null count")
+    print(train_interactions.filter(train_interactions.timestamp.isNull()).count())
+
+    print("MSID null count")
+    print(train_interactions.filter(train_interactions.recording_msid.isNull()).count())
+
+
+    #
+    # window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
+    # percent_ranked = train_interactions.select('*', percent_rank().over(window_partition_by_users).alias('percent_rank'))
+    #
+    # train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
+    # train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet', mode="overwrite")
+    #                         # , partitionBy='recording_msid')
+    # val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
+    # val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet', mode="overwrite")
+    #                       # , partitionBy='recording_msid')
+    #
+    # new_train = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full.parquet')
+    # new_val = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full.parquet')
 
     end_time = time.time()
     print("Time taken to split large interactions into train-val and write to parquet is:", (end_time - start_time))
-
-    print("number of records in full train_set:")
-    print(train_set.count())
-    print("number of records in full val_set:")
-    print(val_set.count())
-    print("number of records in full new_train:")
-    print(new_train.count())
-    print("number of records in full new_val:")
-    print(new_val.count())
+    #
+    # print("number of records in full train_set:")
+    # print(train_set.count())
+    # print("number of records in full val_set:")
+    # print(val_set.count())
+    # print("number of records in full new_train:")
+    # print(new_train.count())
+    # print("number of records in full new_val:")
+    # print(new_val.count())
 
     print("--------------------------The end--------------------------")
 

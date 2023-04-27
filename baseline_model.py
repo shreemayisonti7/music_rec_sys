@@ -18,7 +18,7 @@ def baseline_evaluation(baseline_predictions, test_set):
     current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
         lambda x: x).collect()
     print(current_user_rmsids)
-    metrics = RankingMetrics([(baseline_predictions, current_user_rmsids)])
+    metrics = RankingMetrics(baseline_predictions, current_user_rmsids)
     print(metrics.meanAveragePrecision)
     return
 

@@ -46,7 +46,7 @@ def main(spark, userID):
     #     f'ORDER BY (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) DESC LIMIT 100')
 
     baseline_output.show()
-    baseline_output.createOrReplaceTempView('baseline_output')
+    # baseline_output.createOrReplaceTempView('baseline_output')
 
     ###################################################################################################################
     # evaluation
@@ -63,7 +63,7 @@ def main(spark, userID):
 
     val_set.select('user_id').distinct().show()
 
-    prediction = baseline_output.select('recording_msid').flatMap(lambda x: x).collect()
+    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
     print("Printing top 100 recording msids")
     print(prediction)
 

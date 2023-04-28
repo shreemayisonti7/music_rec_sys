@@ -19,6 +19,8 @@ def average_precision_calculator(pred_songs, true_songs):
         if pred_songs[i] in true_songs:
             positives += 1
             cumulative_average_precision += positives / (i + 1)
+    if positives == 0:
+        return 0
     return cumulative_average_precision / positives
 
 

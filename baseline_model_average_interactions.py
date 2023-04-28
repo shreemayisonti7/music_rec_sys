@@ -31,18 +31,16 @@ def reciprocal_rank_calculator(pred_songs, true_songs):
     return 0
 
 
-def mean_average_precision_eval(baseline_predictions, test_set):
+def evaluator(baseline_predictions, test_set):
     test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
     udf_ap = F.udf(lambda ground_truth_songs:
                    average_precision_calculator(baseline_predictions, ground_truth_songs))
     test_set = test_set.withColumn('average_precision', udf_ap(F.col('ground_truth_songs')))
-    test_set.show()
 
     udf_rr = F.udf(lambda ground_truth_songs:
                    reciprocal_rank_calculator(baseline_predictions, ground_truth_songs))
 
     test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('ground_truth_songs')))
-    test_set.show()
 
     mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
                                           ).collect()[0]['mean_average_precision']
@@ -58,35 +56,61 @@ def main(spark):
     userID : string, userID to find files in HDFS
     """
     start = time.time()
-    train_file = f'hdfs:/user/ss16270_nyu_edu/train_small.parquet'
-    val_file = f'hdfs:/user/ss16270_nyu_edu/val_small.parquet'
-    train_set = spark.read.parquet(train_file)
-    train_set = train_set.repartition("recording_msid")
-    val_set = spark.read.parquet(val_file)
 
-    beta_g = [10, 100, 1000, 10000, 100000]
-    beta_i = [10, 100, 1000, 10000, 100000]
+    # train_file = f'hdfs:/user/ss16270_nyu_edu/train_small.parquet'
+    # val_file = f'hdfs:/user/ss16270_nyu_edu/val_small.parquet'
+
+    train_file = f'hdfs:/user/ss16270_nyu_edu/train_full.parquet'
+    val_file = f'hdfs:/user/ss16270_nyu_edu/val_full.parquet'
+    test_file = f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_test.parquet'
+
+    train_set = spark.read.parquet(train_file)
+    val_set = spark.read.parquet(val_file)
+    test_set = spark.read.parquet(test_file)
+
+    beta_g = [100, 1000, 10000, 100000]
+    beta_i = [100, 1000, 10000, 100000]
     val_maps = []
     grouped_result = train_set.groupBy('recording_msid').agg(F.count('user_id').alias('listens'), F.countDistinct(
         'user_id').alias('num_users'))
-
     for i in range(len(beta_g)):
         mu = 1 / (1 + beta_g[i])
         for j in range(len(beta_i)):
             baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + beta_i[j]),
                                                      ascending=False).limit(100)
             prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
-
-            current_map, current_mrr = mean_average_precision_eval(prediction, val_set)
+            current_map, current_mrr = evaluator(prediction, val_set)
             print(current_map, current_mrr, beta_g[i], beta_i[j])
             val_maps.append((current_map, current_mrr, beta_g[i], beta_i[j]))
-    print(sorted(val_maps, key=lambda x: x[0], reverse=True)[0])
-    print(sorted(val_maps, key=lambda x: x[1], reverse=True)[0])
+
+    optimal_map = sorted(val_maps, key=lambda x: x[0], reverse=True)[0]
+    print("optimal MAP", optimal_map)
+    optimal_mrr = sorted(val_maps, key=lambda x: x[1], reverse=True)[0]
+    print("optimal MRR", optimal_mrr)
+
+    print("Using optimal MAP parameters")
+    mu = 1 / (1 + optimal_map[2])
+    baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + optimal_map[3]),
+                                             ascending=False).limit(100)
+    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
+    val_map, val_mrr = evaluator(prediction, val_set)
+    test_map, test_mrr = evaluator(prediction, test_set)
+    print("MAP and MRR on validation set:", val_map, val_mrr)
+    print("MAP and MRR on test set:", test_map, test_mrr)
+
+    print("Using optimal MRR parameters")
+    mu = 1 / (1 + optimal_mrr[2])
+    baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + optimal_mrr[3]),
+                                             ascending=False).limit(100)
+    prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
+    val_map, val_mrr = evaluator(prediction, val_set)
+    test_map, test_mrr = evaluator(prediction, test_set)
+    print("MAP and MRR on validation set:", val_map, val_mrr)
+    print("MAP and MRR on test set:", test_map, test_mrr)
 
     end = time.time()
     print(f"Total time for evaluation:{end - start}")
     print("The end")
-
 
 if __name__ == "__main__":
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()

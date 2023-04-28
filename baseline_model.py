@@ -10,27 +10,25 @@ from pyspark.mllib.evaluation import RankingMetrics
 import time
 
 
-def baseline_evaluation(spark, baseline_predictions, test_set):
+def average_precision_calculator(pred_songs, true_songs):
+    if len(true_songs) <= 0 or len(pred_songs) <= 0:
+        return 0
+    cumulative_average_precision = 0
+    positives = 0
+    for i in range(len(pred_songs)):
+        if pred_songs[i] in true_songs:
+            positives += 1
+            cumulative_average_precision += positives / (i + 1)
+    return cumulative_average_precision / positives
+
+
+def mean_average_precision_eval(baseline_predictions, test_set):
     udf_metrics = F.udf(lambda ground_truth_songs:
-                        RankingMetrics([(baseline_predictions, ground_truth_songs)]).meanAveragePrecision)
+                        average_precision_calculator(baseline_predictions, ground_truth_songs))
     test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
     test_set.show()
     test_set = test_set.withColumn('average_precision', udf_metrics(F.col('ground_truth_songs')))
     test_set.show()
-    # print("Counting distinct user_id in val set")
-    # test_set.agg(F.countDistinct('user_id')).show()
-    # users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
-    # print(len(users))
-    # map_list = []
-    # for user in users:
-    #     current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
-    #         lambda x: x).collect()
-    #     prediction_Labels = spark.sparkContext.parallelize([(baseline_predictions, current_user_rmsids)])
-    #     metrics = RankingMetrics(prediction_Labels)
-    #     map_list.append(metrics.meanAveragePrecision)
-    # MAP_final = sum(map_list)/len(users)
-    # print("Final MAP:", MAP_final)
-    # MAP_final
     return
 
 
@@ -59,19 +57,19 @@ def main(spark, userID):
     beta_i = [1000]
 
     for i in range(len(beta_g)):
-        mu = 1/(1+beta_g[i])
+        mu = 1 / (1 + beta_g[i])
 
         grouped_result = train_set.groupBy('recording_msid').agg(F.count('user_id').alias('listens'), F.countDistinct(
             'user_id').alias('num_users'))
 
         baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + beta_i[i]),
-                                                                            ascending=False).limit(100)
+                                                 ascending=False).limit(100)
         baseline_output.show()
         prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
         print("Printing top 100 recording msids")
         print(prediction)
 
-        baseline_evaluation(spark, prediction, val_set)
+        mean_average_precision_eval(prediction, val_set)
         # print(map, beta_g[i], beta_i[i])
 
     ###################################################################################################################
@@ -102,5 +100,3 @@ if __name__ == "__main__":
     main(spark, userID)
 
     spark.stop()
-
-

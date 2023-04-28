@@ -66,7 +66,8 @@ def main(spark, userID):
         #     f'SELECT recording_msid, (cum_rating - {mu[0]})/(num_users + {beta_i[0]}) as avg_rating FROM grouped_result '
         #     f'ORDER BY avg_rating DESC LIMIT 100')
 
-        baseline_output = grouped_result.orderBy(('listens' - mu)/('num_users' + beta_i[i]), ascending=False).limit(100)
+        baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + beta_i[i]),
+                                                                            ascending=False).limit(100)
         # baseline_output = spark.sql(
         #     f'SELECT recording_msid FROM grouped_result '
         #     f'ORDER BY (cum_rating - {mu})/(num_users + {beta_i[i]}) DESC LIMIT 100')

@@ -24,16 +24,17 @@ def average_precision_calculator(pred_songs, true_songs):
     return cumulative_average_precision / positives
 
 
+
 def mean_average_precision_eval(baseline_predictions, test_set):
     udf_metrics = F.udf(lambda ground_truth_songs:
                         average_precision_calculator(baseline_predictions, ground_truth_songs))
     test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
-    test_set.show()
+    # test_set.show()
     test_set = test_set.withColumn('average_precision', udf_metrics(F.col('ground_truth_songs')))
-    test_set.show()
+    # test_set.show()
     mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
                                           ).collect()[0]['mean_average_precision']
-    print('mean_average_precision:', mean_average_precision)
+    # print('mean_average_precision:', mean_average_precision)
     return mean_average_precision
 
 
@@ -56,26 +57,29 @@ def main(spark, userID):
     val_set = spark.read.parquet(val_file)
     val_set = val_set.repartition("user_id")
 
-    # beta_g = [0.01, 0.1, 1, 10, 100, 1000, 10000]
-    # beta_i = [0.01, 0.1, 1, 10, 100, 1000, 10000]
-    beta_g = [1000]
-    beta_i = [1000]
+    beta_g = [0.01, 0.1, 1, 10, 100, 1000, 10000]
+    beta_i = [0.01, 0.1, 1, 10, 100, 1000, 10000]
+    val_maps = []
+    # beta_g = [1000]
+    # beta_i = [1000]
+
+    grouped_result = train_set.groupBy('recording_msid').agg(F.count('user_id').alias('listens'), F.countDistinct(
+        'user_id').alias('num_users'))
 
     for i in range(len(beta_g)):
         mu = 1 / (1 + beta_g[i])
+        for j in range(len(beta_i)):
+            baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + beta_i[j]),
+                                                     ascending=False).limit(100)
+            # baseline_output.show()
+            prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
+            # print("Printing top 100 recording msids")
+            # print(prediction)
 
-        grouped_result = train_set.groupBy('recording_msid').agg(F.count('user_id').alias('listens'), F.countDistinct(
-            'user_id').alias('num_users'))
-
-        baseline_output = grouped_result.orderBy((F.col('listens') - mu) / (F.col('num_users') + beta_i[i]),
-                                                 ascending=False).limit(100)
-        baseline_output.show()
-        prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
-        print("Printing top 100 recording msids")
-        print(prediction)
-
-        current_map = mean_average_precision_eval(prediction, val_set)
-        print(current_map, beta_g[i], beta_i[i])
+            current_map = mean_average_precision_eval(prediction, val_set)
+            print(current_map, beta_g[i], beta_i[j])
+            val_maps.append((current_map, beta_g[i], beta_i[j]))
+    print(sorted(val_maps, key=lambda x:x[0], reverse=True)[0])
 
     end = time.time()
     print(f"Total time for evaluation:{end - start}")

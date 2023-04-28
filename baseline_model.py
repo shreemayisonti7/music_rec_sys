@@ -31,7 +31,10 @@ def mean_average_precision_eval(baseline_predictions, test_set):
     test_set.show()
     test_set = test_set.withColumn('average_precision', udf_metrics(F.col('ground_truth_songs')))
     test_set.show()
-    return
+    mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
+                                          ).collect()[0]['mean_average_precision']
+    print('mean_average_precision:', mean_average_precision)
+    return mean_average_precision
 
 
 def main(spark, userID):
@@ -71,18 +74,8 @@ def main(spark, userID):
         print("Printing top 100 recording msids")
         print(prediction)
 
-        mean_average_precision_eval(prediction, val_set)
-        # print(map, beta_g[i], beta_i[i])
-
-    ###################################################################################################################
-    # evaluation
-    # val_f = val_set.groupby('user_id').agg(F.collect_set('recording_msid').alias('unique_recordings'))
-    # print("printing validation recording ids' lists for various users")
-    # val_f.show()
-    # val_f.createOrReplaceTempView('val_f')
-    # ground_truth = val_f.select('unique_recordings').rdd.flatMap(lambda x: x).collect()
-    # print("Ground truth")
-    # print(ground_truth)
+        current_map = mean_average_precision_eval(prediction, val_set)
+        print(current_map, beta_g[i], beta_i[i])
 
     end = time.time()
     print(f"Total time for evaluation:{end - start}")

@@ -11,20 +11,27 @@ import time
 
 
 def baseline_evaluation(spark, baseline_predictions, test_set):
-    print("Counting distinct user_id in val set")
-    test_set.agg(F.countDistinct('user_id')).show()
-    users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
-    print(len(users))
-    map_list = []
-    for user in users:
-        current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
-            lambda x: x).collect()
-        prediction_Labels = spark.sparkContext.parallelize([(baseline_predictions, current_user_rmsids)])
-        metrics = RankingMetrics(prediction_Labels)
-        map_list.append(metrics.meanAveragePrecision)
-    MAP_final = sum(map_list)/len(users)
-    print("Final MAP:", MAP_final )
-    return MAP_final
+    udf_metrics = F.udf(lambda ground_truth_songs: RankingMetrics(
+        spark.sparkContext.parallelize([(baseline_predictions, ground_truth_songs)])).meanAveragePrecision)
+    test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
+    test_set.show()
+    test_set = test_set.withColumn('average_precision', udf_metrics(F.col('ground_truth_songs')))
+    test_set.show()
+    # print("Counting distinct user_id in val set")
+    # test_set.agg(F.countDistinct('user_id')).show()
+    # users = test_set.select('user_id').distinct().rdd.flatMap(lambda x: x).collect()
+    # print(len(users))
+    # map_list = []
+    # for user in users:
+    #     current_user_rmsids = test_set.filter(test_set.user_id == user).select('recording_msid').distinct().rdd.flatMap(
+    #         lambda x: x).collect()
+    #     prediction_Labels = spark.sparkContext.parallelize([(baseline_predictions, current_user_rmsids)])
+    #     metrics = RankingMetrics(prediction_Labels)
+    #     map_list.append(metrics.meanAveragePrecision)
+    # MAP_final = sum(map_list)/len(users)
+    # print("Final MAP:", MAP_final)
+    # MAP_final
+    return
 
 
 def main(spark, userID):
@@ -64,8 +71,8 @@ def main(spark, userID):
         print("Printing top 100 recording msids")
         print(prediction)
 
-        map = baseline_evaluation(spark, prediction, val_set)
-        print(map, beta_g[i], beta_i[i])
+        baseline_evaluation(spark, prediction, val_set)
+        # print(map, beta_g[i], beta_i[i])
 
     ###################################################################################################################
     # evaluation

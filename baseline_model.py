@@ -11,8 +11,8 @@ import time
 
 
 def baseline_evaluation(spark, baseline_predictions, test_set):
-    udf_metrics = F.udf(lambda ground_truth_songs: RankingMetrics(
-        spark.sparkContext.parallelize([(baseline_predictions, ground_truth_songs)])).meanAveragePrecision)
+    udf_metrics = F.udf(lambda ground_truth_songs:
+                        RankingMetrics([(baseline_predictions, ground_truth_songs)]).meanAveragePrecision)
     test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
     test_set.show()
     test_set = test_set.withColumn('average_precision', udf_metrics(F.col('ground_truth_songs')))

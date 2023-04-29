@@ -76,6 +76,8 @@ def main(spark):
     baseline_output = grouped_result.orderBy(F.col('num_users'), ascending=False).limit(100)
     prediction = baseline_output.select('recording_msid').rdd.flatMap(lambda x: x).collect()
 
+    train_map, train_mrr = evaluator(prediction, train_set)
+    print(train_map, train_mrr)
     val_map, val_mrr = evaluator(prediction, val_set)
     test_map, test_mrr = evaluator(prediction, test_set)
 

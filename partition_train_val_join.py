@@ -69,23 +69,22 @@ def main(spark, userID):
 
     train_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train.parquet')
 
-    joined_db = train_interactions.join(train_tracks, on='recording_msid', how='left'
-                                        ).select(train_interactions["*"],train_tracks["recording_mbid"])
+    joined_db = train_interactions.join(train_tracks, on='recording_msid', how='left')\
+        # .select(train_interactions["*"], train_tracks["recording_mbid"])
+
+    new_data = joined_db.select('user_id', 'timestamp', when(col('recording_mbid').isNotNull(), col('recording_mbid')
+                                                             ).otherwise(col('recording_msid')).alias('recording_msid'))
 
     window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
-    percent_ranked = joined_db.select('*', percent_rank().over(window_partition_by_users).alias(
+    percent_ranked = new_data.select('*', percent_rank().over(window_partition_by_users).alias(
         'percent_rank'))
 
-    new_data = percent_ranked.select(col("*"), when(col('recording_mbid'
-                                                        ), col('recording_mbid')).otherwise(col('recording_msid')
-                                                                                            ).alias('recording_id'))
+    # new_data_f = new_data.select('user_id', 'timestamp', 'recording_id')
 
-    new_data_f = new_data.select('user_id','timestamp','recording_id')
-
-    train_set = new_data_f.filter(percent_ranked.percent_rank <= 0.8)
+    train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
     train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet', mode="overwrite")
     # , partitionBy='recording_msid')
-    val_set = new_data_f.filter(percent_ranked.percent_rank > 0.8)
+    val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
     val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet', mode="overwrite")
     # , partitionBy='recording_msid')
 

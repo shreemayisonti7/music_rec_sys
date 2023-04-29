@@ -60,8 +60,8 @@ def main(spark):
     # train_file = f'hdfs:/user/ss16270_nyu_edu/train_small.parquet'
     # val_file = f'hdfs:/user/ss16270_nyu_edu/val_small.parquet'
 
-    train_file = f'hdfs:/user/ss16270_nyu_edu/train_full.parquet'
-    val_file = f'hdfs:/user/ss16270_nyu_edu/val_full.parquet'
+    # train_file = f'hdfs:/user/ss16270_nyu_edu/train_full.parquet'
+    # val_file = f'hdfs:/user/ss16270_nyu_edu/val_full.parquet'
 
     train_file = f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet'
     val_file = f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet'

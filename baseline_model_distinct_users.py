@@ -65,6 +65,7 @@ def main(spark):
 
     train_file = f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet'
     val_file = f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet'
+
     #test_file = f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_test.parquet'
 
     test_file = f'hdfs:/user/bm106_nyu_edu/1004-project-2023/test_full_joined.parquet'

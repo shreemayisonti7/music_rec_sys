@@ -105,7 +105,7 @@ def main(spark, userID):
     # print(val_set.count())
     # print("number of records in full new_train:")
 
-    test_new = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/test_full_joined.parquet')
+    test_new = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
     print("number of records in full test set:")
     print(test_interactions.count())

@@ -68,7 +68,7 @@ def main(spark):
 
     #test_file = f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_test.parquet'
 
-    test_file = f'hdfs:/user/bm106_nyu_edu/1004-project-2023/test_full_joined.parquet'
+    test_file = f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet'
 
     train_set = spark.read.parquet(train_file)
     val_set = spark.read.parquet(val_file)

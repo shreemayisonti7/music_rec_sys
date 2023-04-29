@@ -64,44 +64,56 @@ def main(spark, userID):
     # For large dataset
     print("--------------------------Starting splitting of large file-------------------------")
 
-    start_time = time.time()
-    train_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train.parquet')
+    # start_time = time.time()
+    # train_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_train.parquet')
+    #
+    # train_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train.parquet')
 
-    train_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_train.parquet')
+    test_interactions = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/interactions_test.parquet')
 
-    joined_db = train_interactions.join(train_tracks, on='recording_msid', how='left')\
-        # .select(train_interactions["*"], train_tracks["recording_mbid"])
+    test_tracks = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/tracks_test.parquet')
 
-    new_data = joined_db.select('user_id', 'timestamp', when(col('recording_mbid').isNotNull(), col('recording_mbid')
+    # joined_db = train_interactions.join(train_tracks, on='recording_msid', how='left')
+
+    joined_test_db = test_interactions.join(test_tracks, on='recording_msid', how='left')
+
+    # new_data = joined_db.select('user_id', 'timestamp', when(col('recording_mbid').isNotNull(), col('recording_mbid')
+    #                                                          ).otherwise(col('recording_msid')).alias('recording_msid'))
+
+    new_data_test = joined_test_db.select('user_id', 'timestamp', when(col('recording_mbid').isNotNull(), col('recording_mbid')
                                                              ).otherwise(col('recording_msid')).alias('recording_msid'))
 
-    window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
-    percent_ranked = new_data.select('*', percent_rank().over(window_partition_by_users).alias(
-        'percent_rank'))
-
-    # new_data_f = new_data.select('user_id', 'timestamp', 'recording_id')
-
-    train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
-    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet', mode="overwrite")
-    # , partitionBy='recording_msid')
-    val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
-    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet', mode="overwrite")
+    # window_partition_by_users = Window.partitionBy('user_id').orderBy('timestamp')
+    # percent_ranked = new_data.select('*', percent_rank().over(window_partition_by_users).alias(
+    #     'percent_rank'))
+    #
+    # train_set = percent_ranked.filter(percent_ranked.percent_rank <= 0.8)
+    # train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet', mode="overwrite")
+    # # , partitionBy='recording_msid')
+    # val_set = percent_ranked.filter(percent_ranked.percent_rank > 0.8)
+    # val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet', mode="overwrite")
     # , partitionBy='recording_msid')
 
-    new_train = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
-    new_val = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
+    new_data_test.write.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet', mode="overwrite")
 
     # end_time = time.time()
     # print("Time taken to split large interactions into train-val and write to parquet is:", (end_time - start_time))
     #
-    print("number of records in full train_set:")
-    print(train_set.count())
-    print("number of records in full val_set:")
-    print(val_set.count())
-    print("number of records in full new_train:")
-    print(new_train.count())
-    print("number of records in full new_val:")
-    print(new_val.count())
+    # print("number of records in full train_set:")
+    # print(train_set.count())
+    # print("number of records in full val_set:")
+    # print(val_set.count())
+    # print("number of records in full new_train:")
+
+    test_new = spark.read.parquet(f'hdfs:/user/bm106_nyu_edu/1004-project-2023/test_full_joined.parquet')
+
+    print("number of records in full test set:")
+    print(test_interactions.count())
+
+    print("number of records in full joined test set:")
+    print(test_new.count())
+
+
 
     print("--------------------------The end--------------------------")
 

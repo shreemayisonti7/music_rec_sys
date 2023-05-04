@@ -9,6 +9,9 @@ from pyspark.sql import SparkSession
 # from pyspark.ml.recommendation import ALS
 # from pyspark.sql import Row
 from pyspark.ml.feature import StringIndexer
+import pyspark.sql.functions as F
+from pyspark.sql.functions import desc, row_number, monotonically_increasing_id
+from pyspark.sql.window import Window
 
 
 def main(spark, userID):
@@ -19,9 +22,13 @@ def main(spark, userID):
     #
     # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
-    recording_data = train_data.select("recording_msid").distinct()
-    print("Unique recording count")
-    print(recording_data.count())
+    recording_data = train_data.select("recording_msid")
+    rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid")).alias("rec_frequency")
+
+    rec_data = rec_fin.withColumn('recording_index',
+                                   row_number().over(Window.orderBy("rec_frequency")) - 1)
+
+    rec_data.show()
     #
     # recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
     # # Fits a model to the input dataset with optional parameters.

@@ -21,19 +21,19 @@ def main(spark, userID):
 
     recording_data = train_data.select("recording_msid").distinct()
     print("Unique recording count")
-    recording_data.count()
-
-    recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
-    # Fits a model to the input dataset with optional parameters.
-    rec_new = recording_indexer.fit(recording_data).transform(recording_data)
-    print("Recording index")
-    rec_new.show()
-
-    train_new = train_data.join(rec_new,on="recording_msid",how="left")
-    print("Joined data")
-    train_new.show()
-
-    train_new.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
+    print(recording_data.count())
+    #
+    # recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
+    # # Fits a model to the input dataset with optional parameters.
+    # rec_new = recording_indexer.fit(recording_data).transform(recording_data)
+    # print("Recording index")
+    # rec_new.show()
+    #
+    # train_new = train_data.join(rec_new,on="recording_msid",how="left")
+    # print("Joined data")
+    # train_new.show()
+    #
+    # train_new.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
     end = time.time()
     print(f"Time for execution:{end-start}")
 

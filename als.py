@@ -27,20 +27,15 @@ def main(spark, userID):
 
     rec_data = rec_fin.withColumn('recording_index',
                                    row_number().over(Window.orderBy("rec_frequency")) - 1)
-
+    print("Index data")
     rec_data.show()
-    #
-    # recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
-    # # Fits a model to the input dataset with optional parameters.
-    # rec_new = recording_indexer.fit(recording_data).transform(recording_data)
-    # print("Recording index")
-    # rec_new.show()
-    #
-    # train_new = train_data.join(rec_new,on="recording_msid",how="left")
-    # print("Joined data")
-    # train_new.show()
-    #
-    # train_new.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
+
+    train_new = train_data.join(rec_data,on="recording_msid",how="left")
+    print("Joined data")
+    train_f = train_new.select("user_id","recording_msid","recording_index")
+    train_f.show()
+
+    train_f.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
     end = time.time()
     print(f"Time for execution:{end-start}")
 

@@ -40,8 +40,8 @@ def main(spark, userID):
     # print(f"Time for execution:{end-start}")
 
     print("---------------------------Converting recording_msids to integer for train---------------------------------")
-    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet')
-    train_data.show()
+    # train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet')
+    # train_data.show()
     start = time.time()
     #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
@@ -52,7 +52,7 @@ def main(spark, userID):
     rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
 
     rec_data = rec_fin.withColumn('recording_index',
-                                  row_number().over(Window.partitionBy("recording_msid").orderBy("rec_frequency")) - 1)
+                                  row_number().over(Window.orderBy("rec_frequency")) - 1)
     print("Index data")
     rec_data.show()
 
@@ -70,7 +70,7 @@ def main(spark, userID):
     rec_fin_t = recording_data_t.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
 
     rec_data_t = rec_fin_t.withColumn('recording_index',
-                                  row_number().over(Window.partitionBy("recording_msid").orderBy("rec_frequency")) - 1)
+                                  row_number().over(Window.orderBy("rec_frequency")) - 1)
     print("Index data")
     rec_data_t.show()
 

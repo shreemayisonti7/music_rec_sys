@@ -19,11 +19,16 @@ def main(spark, userID):
     #
     # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
-    train_data = train_data.repartition(50)
+    recording_data = train_data.select("recording_msid").distinct()
 
     recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
     # Fits a model to the input dataset with optional parameters.
-    train_new = recording_indexer.fit(train_data).transform(train_data)
+    rec_new = recording_indexer.fit(recording_data).transform(recording_data)
+    print("Recording index")
+    rec_new.show()
+
+    train_new = train_data.join(rec_new,on="recording_msid",how="left")
+    print("Joined data")
     train_new.show()
 
     train_new.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")

@@ -20,6 +20,8 @@ def main(spark, userID):
     # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
     recording_data = train_data.select("recording_msid").distinct()
+    print("Unique recording count")
+    recording_data.count()
 
     recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
     # Fits a model to the input dataset with optional parameters.

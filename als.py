@@ -19,6 +19,8 @@ def main(spark, userID):
     #
     # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
+    train_data = train_data.repartition(50)
+
     recording_indexer = StringIndexer(inputCol="recording_msid", outputCol="recordingIndex")
     # Fits a model to the input dataset with optional parameters.
     train_new = recording_indexer.fit(train_data).transform(train_data)

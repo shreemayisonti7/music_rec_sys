@@ -2,12 +2,6 @@ import os
 import time
 
 from pyspark.sql import SparkSession
-# from pyspark.sql import Window
-# from pyspark.sql.functions import percent_rank
-#
-# from pyspark.ml.evaluation import RegressionEvaluator
-# from pyspark.ml.recommendation import ALS
-# from pyspark.sql import Row
 from pyspark.ml.feature import StringIndexer
 import pyspark.sql.functions as F
 from pyspark.sql.functions import desc, row_number, monotonically_increasing_id
@@ -16,47 +10,37 @@ from pyspark.sql.window import Window
 
 def main(spark, userID):
     print("---------------------------Converting recording_msids to integer for train---------------------------------")
-    # start = time.time()
-    # train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
-    # # val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
-    # #
-    # # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
-    #
-    # recording_data = train_data.select("recording_msid")
-    # rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
-    #
-    # rec_data = rec_fin.withColumn('recording_index',
-    #                                row_number().over(Window.partitionBy("recording_msid").orderBy("rec_frequency")) - 1)
-    # print("Index data")
-    # rec_data.show()
-    #
-    # train_new = train_data.join(rec_data,on="recording_msid",how="left")
-    # print("Joined data")
-    # train_f = train_new.select("user_id","recording_msid","recording_index")
-    # train_f.show()
-    #
-    # train_f.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
-    # end = time.time()
-    # print(f"Time for execution:{end-start}")
+    start=time.time()
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
 
-    print("---------------------------Converting recording_msids to integer for train---------------------------------")
-    # train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet')
-    # train_data.show()
-    start = time.time()
-    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
-    #
-    # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
-
-    recording_data = val_data.select("recording_msid")
+    recording_data = train_data.select("recording_msid")
     rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
 
     rec_data = rec_fin.withColumn('recording_index',
-                                  row_number().over(Window.orderBy("rec_frequency")) - 1)
+                                   row_number().over(Window.partitionBy("recording_msid").orderBy("rec_frequency")) - 1)
     print("Index data")
     rec_data.show()
 
-    val_new = val_data.join(rec_data, on="recording_msid", how="left")
+    train_new = train_data.join(rec_data,on="recording_msid",how="left")
+    print("Joined data")
+    train_f = train_new.select("user_id","recording_msid","recording_index")
+    train_f.show()
+
+    train_f.write.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet', mode="overwrite")
+
+
+    print("---------------------------Converting recording_msids to integer for train---------------------------------")
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
+
+    recording_data_v = val_data.select("recording_msid")
+    rec_fin_v = recording_data_v.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
+
+    rec_data_v = rec_fin_v.withColumn('recording_index',
+                                  row_number().over(Window.orderBy("rec_frequency")) - 1)
+    print("Index data")
+    rec_data_v.show()
+
+    val_new = val_data.join(rec_data_v, on="recording_msid", how="left")
     print("Joined data")
     val_f = val_new.select("user_id", "recording_msid", "recording_index")
     val_f.show()

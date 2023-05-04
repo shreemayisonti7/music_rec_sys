@@ -23,7 +23,7 @@ def main(spark, userID):
     # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
 
     recording_data = train_data.select("recording_msid")
-    rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid")).alias("rec_frequency")
+    rec_fin = recording_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
 
     rec_data = rec_fin.withColumn('recording_index',
                                    row_number().over(Window.orderBy("rec_frequency")) - 1)

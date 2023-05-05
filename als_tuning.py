@@ -8,7 +8,7 @@ from pyspark.sql.window import Window
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
 from pyspark.sql import Row
-from pyspark.ml.tuning import ParamGridBuilder
+from pyspark.ml.tuning import ParamGridBuilder,CrossValidator
 from pyspark.ml import Pipeline
 
 def main(spark, userID):
@@ -25,12 +25,28 @@ def main(spark, userID):
     grouped_data_v = val_data_f.groupBy("user_id", "recording_index").agg(F.count("recording_index").
                                                                           alias("rec_frequency"))
 
-    reg_param = [0.001,0.01,0.1,1,10,100,1000]
-    rank_list = np.linspace(1,10,endpoint=True)
-    alpha = np.linspace(1,10,endpoint=True)
+    # reg_param = [0.001,0.01,0.1,1,10,100,1000]
+    # rank_list = np.linspace(1,10,endpoint=True)
+    # alpha = np.linspace(1,10,endpoint=True)
 
-    als = ALS(maxIter=5, regParam=0.01, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
+    als = ALS(maxIter=5, regParam=10,userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
               coldStartStrategy="drop",implicitPrefs=True)
+
+    # pipeline = Pipeline(stages=[als])
+    # paramGrid = ParamGridBuilder() \
+    #     .addGrid(als.regParam, [0.001,0.01,0.1,1,10,100,1000]) \
+    #     .addGrid(als.rank, [1,2,3,4,5,6,7,8,9,10]) \
+    #     .addGrid(als.alpha,[1,2,3,4,5,6,7,8,9,10]) \
+    #     .build()
+    #
+    # crossval = CrossValidator(estimator=pipeline,
+    #                           estimatorParamMaps=paramGrid,
+    #                           evaluator=BinaryClassificationEvaluator(),
+    #                           numFolds=2)  # use 3+ folds in practice
+    #
+    # # Run cross-validation, and choose the best set of parameters.
+    # cvModel = crossval.fit(training)
+
     model = als.fit(grouped_data)
 
     # Evaluate the model by computing the RMSE on the test data
@@ -40,17 +56,8 @@ def main(spark, userID):
     rmse = evaluator.evaluate(predictions)
     print("Root-mean-square error = " + str(rmse))
 
-    # Generate top 10 movie recommendations for each user
-    # userRecs = model.recommendForAllUsers(10)
-    # # Generate top 10 user recommendations for each movie
-    # movieRecs = model.recommendForAllItems(10)
-    #
-    # # Generate top 10 movie recommendations for a specified set of users
-    # users = ratings.select(als.getUserCol()).distinct().limit(3)
-    # userSubsetRecs = model.recommendForUserSubset(users, 10)
-    # # Generate top 10 user recommendations for a specified set of movies
-    # movies = ratings.select(als.getItemCol()).distinct().limit(3)
-    # movieSubSetRecs = model.recommendForItemSubset(movies, 10)
+    userRecs = model.recommendForAllUsers(100)
+    userRecs.show()
 
     end=time.time()
 

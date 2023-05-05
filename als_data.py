@@ -27,9 +27,10 @@ def main(spark, userID):
 
     rec_fin = final_data.groupBy("recording_msid").agg(F.countDistinct("recording_msid").alias("rec_frequency"))
     rec_data = rec_fin.withColumn('recording_index',
-                                  row_number().over(Window.partitionBy("recording_msid").orderBy("rec_frequency")) - 1)
+                                  row_number().over(Window.orderBy("rec_frequency")) - 1)
     print("Index data")
     rec_data.show()
+    print(rec_data.count())
 
     rec_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/rec_index_als.parquet', mode="overwrite")
 

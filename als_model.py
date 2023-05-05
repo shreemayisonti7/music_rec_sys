@@ -21,15 +21,15 @@ def main(spark, userID):
                                                                          alias("rec_frequency"))
 
     val_data_f = val_data.select("user_id","recording_index")
-    grouped_data_v = train_data_f.groupBy("user_id", "recording_index").agg(F.count("recording_index").
+    grouped_data_v = val_data_f.groupBy("user_id", "recording_index").agg(F.count("recording_index").
                                                                           alias("rec_frequency"))
 
     als = ALS(maxIter=5, regParam=0.01, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
               coldStartStrategy="drop",implicitPrefs=True)
-    model = als.fit(training)
+    model = als.fit(grouped_data)
 
     # Evaluate the model by computing the RMSE on the test data
-    predictions = model.transform(test)
+    predictions = model.transform(grouped_data_v)
     evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
                                     predictionCol="prediction")
     rmse = evaluator.evaluate(predictions)

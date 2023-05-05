@@ -6,6 +6,7 @@ from pyspark.ml.feature import StringIndexer
 import pyspark.sql.functions as F
 from pyspark.sql.functions import desc, row_number, monotonically_increasing_id
 from pyspark.sql.window import Window
+from pyspark.sql.functions import when
 
 
 def main(spark, userID):

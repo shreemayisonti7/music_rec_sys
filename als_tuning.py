@@ -29,7 +29,7 @@ def main(spark, userID):
     # rank_list = np.linspace(1,10,endpoint=True)
     # alpha = np.linspace(1,10,endpoint=True)
 
-    als = ALS(maxIter=5, regParam=10,userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
+    als = ALS(maxIter=5, regParam=0.1,userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
               coldStartStrategy="drop",implicitPrefs=True)
 
     # pipeline = Pipeline(stages=[als])
@@ -57,7 +57,7 @@ def main(spark, userID):
     # print("Root-mean-square error = " + str(rmse))
 
     start = time.time()
-    userRecs = model.recommendForAllUsers(10)
+    userRecs = model.recommendForAllUsers(100)
     userRecs.show()
 
     end=time.time()

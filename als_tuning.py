@@ -13,7 +13,7 @@ from pyspark.ml import Pipeline
 
 def main(spark, userID):
     print("---------------------------Converting recording_msids to integer for train---------------------------------")
-    start = time.time()
+
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_als.parquet')
 
@@ -51,11 +51,12 @@ def main(spark, userID):
 
     # Evaluate the model by computing the RMSE on the test data
     predictions = model.transform(grouped_data_v)
-    evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
-                                    predictionCol="prediction")
-    rmse = evaluator.evaluate(predictions)
-    print("Root-mean-square error = " + str(rmse))
+    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
+    #                                 predictionCol="prediction")
+    # rmse = evaluator.evaluate(predictions)
+    # print("Root-mean-square error = " + str(rmse))
 
+    start = time.time()
     userRecs = model.recommendForAllUsers(10)
     userRecs.show()
 

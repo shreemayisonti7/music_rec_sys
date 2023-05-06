@@ -75,7 +75,7 @@ def main(spark, userID):
                 model_params['rmse'].append(rmse)
 
                 if rmse<rmse_min:
-                    model.save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+                    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
 
     min_rmse = np.argmin(model['rmse'])
     print(f"Reg:{model_params['reg_param'][min_rmse]}, alpha:{model_params['alpha'][min_rmse]}, rank:{model_params['rank']}, rmse:{model_params['rmse'][min_rmse]}")

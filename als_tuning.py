@@ -29,8 +29,8 @@ def main(spark, userID):
     # rank_list = np.linspace(1,10,endpoint=True)
     # alpha = np.linspace(1,10,endpoint=True)
 
-    als = ALS(maxIter=5, regParam=0.1,userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
-              coldStartStrategy="drop",implicitPrefs=True)
+    #als = ALS(maxIter=10, regParam=0.1,alpha = 40, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
+    #          coldStartStrategy="drop",implicitPrefs=True)
 
     # pipeline = Pipeline(stages=[als])
     # paramGrid = ParamGridBuilder() \
@@ -47,19 +47,46 @@ def main(spark, userID):
     # # Run cross-validation, and choose the best set of parameters.
     # cvModel = crossval.fit(training)
 
-    model = als.fit(grouped_data)
+    reg_param = [0.01,0.1,1,10]
+    rank_list = [1,2,5,10]
+    alpha_list = [1,10,25,50]
 
-    # Evaluate the model by computing the RMSE on the test data
-    predictions = model.transform(grouped_data_v)
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
-    #                                 predictionCol="prediction")
-    # rmse = evaluator.evaluate(predictions)
-    # print("Root-mean-square error = " + str(rmse))
+    evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
+                                    predictionCol="prediction")
+
+    rmse_min = float('inf')
+    model_params = {'reg':[], 'alpha':[], 'rank':[], 'rmse':[]}
+
+
+    for i in range(len(reg_param)):
+        for j in range(len(rank_list)):
+            for k in range(len(alpha_list)):
+                als = ALS(maxIter=10, regParam=reg_param[i], alpha=alpha_list[k], rank=rank_list[j], userCol="user_id",
+                          itemCol="recording_index",
+                          ratingCol="rec_frequency",
+                          coldStartStrategy="drop", implicitPrefs=True)
+
+                model = als.fit(grouped_data)
+                predictions = model.transform(grouped_data_v)
+                rmse = evaluator.evaluate(predictions)
+                model_params['reg'].append(reg_param[i])
+                model_params['alpha'].append(alpha_list[k])
+                model_params['rank'].append(rank_list[j])
+                model_params['rmse'].append(rmse)
+
+                if rmse<rmse_min:
+                    model.save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+
+    min_rmse = np.argmin(model['rmse'])
+    print(f"Reg:{model_params['reg_param'][min_rmse]}, alpha:{model_params['alpha'][min_rmse]}, rank:{model_params['rank']}, rmse:{model_params['rmse'][min_rmse]}")
+
+    #print("Root-mean-square error = " + str(rmse))
 
     start = time.time()
-    userRecs = model.recommendForAllUsers(100)
-    userRecs.show()
-
+    # userRecs = model.recommendForAllUsers(100)
+    # userRecs.show()
+    #
+    # userRecs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/als_pred.parquet', mode="overwrite")
     end=time.time()
 
     print(f"Total time for execution:{end-start}")

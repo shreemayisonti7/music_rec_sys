@@ -56,7 +56,7 @@ def main(spark, userID):
     rmse = evaluator.evaluate(predictions)
     print("Root-mean-square error = " + str(rmse))
 
-    userRecs = model.recommendForAllUsers(100)
+    userRecs = model.recommendForAllUsers(10)
     userRecs.show()
 
     end=time.time()

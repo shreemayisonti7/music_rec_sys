@@ -47,9 +47,9 @@ def main(spark, userID):
     # # Run cross-validation, and choose the best set of parameters.
     # cvModel = crossval.fit(training)
 
-    reg_param = [0.01,0.1,1,10]
-    rank_list = [1,2,5,10]
-    alpha_list = [1,10,25,50]
+    reg_param = [0.01,0.1]
+    rank_list = [1,5,10]
+    alpha_list = [10,25,50]
 
     evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
                                     predictionCol="prediction")
@@ -77,7 +77,7 @@ def main(spark, userID):
                 if rmse<rmse_min:
                     model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
 
-    min_rmse = np.argmin(model['rmse'])
+    min_rmse = np.argmin(model_params['rmse'])
     print(f"Reg:{model_params['reg_param'][min_rmse]}, alpha:{model_params['alpha'][min_rmse]}, rank:{model_params['rank']}, rmse:{model_params['rmse'][min_rmse]}")
 
     #print("Root-mean-square error = " + str(rmse))

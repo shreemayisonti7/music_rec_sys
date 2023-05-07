@@ -15,9 +15,7 @@ def main(spark, userID):
     print("---------------------------Converting recording_msids to integer for train---------------------------------")
     best_model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
     print(f"Rank: {best_model.rank}")
-    print(f"Alpha:{best_model.getRegParam()}")
-    print(f"Reg param:{best_model.getAlpha()}")
-
+    best_model.explainParams()
 
 
 

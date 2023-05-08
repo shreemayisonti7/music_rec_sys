@@ -25,11 +25,8 @@ def main(spark, userID):
     grouped_data_v = val_data_f.groupBy("user_id", "recording_index").agg(F.count("recording_index").
                                                                           alias("rec_frequency"))
 
-    reg_param = [0.001,0.01,0.1,1,10,100,1000]
-    rank_list = np.linspace(1,10,endpoint=True)
-    alpha = np.linspace(1,10,endpoint=True)
 
-    als = ALS(maxIter=5, regParam=0.01, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
+    als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
               coldStartStrategy="drop",implicitPrefs=True)
     model = als.fit(grouped_data)
 
@@ -41,16 +38,8 @@ def main(spark, userID):
     print("Root-mean-square error = " + str(rmse))
 
     # Generate top 10 movie recommendations for each user
-    # userRecs = model.recommendForAllUsers(10)
-    # # Generate top 10 user recommendations for each movie
-    # movieRecs = model.recommendForAllItems(10)
-    #
-    # # Generate top 10 movie recommendations for a specified set of users
-    # users = ratings.select(als.getUserCol()).distinct().limit(3)
-    # userSubsetRecs = model.recommendForUserSubset(users, 10)
-    # # Generate top 10 user recommendations for a specified set of movies
-    # movies = ratings.select(als.getItemCol()).distinct().limit(3)
-    # movieSubSetRecs = model.recommendForItemSubset(movies, 10)
+    userRecs = model.recommendForAllUsers(100)
+    userRecs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
     end=time.time()
 

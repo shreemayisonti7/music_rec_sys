@@ -47,9 +47,9 @@ def main(spark, userID):
     # # Run cross-validation, and choose the best set of parameters.
     # cvModel = crossval.fit(training)
 
-    reg_param = [0.01,0.1]
-    rank_list = [5,10]
-    alpha_list = [1,10]
+    reg_param = [0.001,0.01]
+    rank_list = [10,15]
+    alpha_list = [10,50]
 
     evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
                                     predictionCol="prediction")

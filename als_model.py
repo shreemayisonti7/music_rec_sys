@@ -33,7 +33,7 @@ def main(spark):
     print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    user_recs = model.recommendForAllUsers(100)
+    # user_recs = model.recommendForAllUsers(100)
     # user_recs.show()
     # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 

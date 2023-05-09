@@ -64,7 +64,6 @@ def main(spark):
 
 
 if __name__ == "__main__":
-    # Create the spark session object
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()
 
     main(spark)

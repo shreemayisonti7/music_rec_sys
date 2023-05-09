@@ -2,19 +2,11 @@ import os
 import time
 
 from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
-from pyspark.sql.functions import desc, row_number, monotonically_increasing_id
-from pyspark.sql.window import Window
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
-from pyspark.sql import Row
-from pyspark.ml.tuning import ParamGridBuilder
-from pyspark.ml import Pipeline
 
 
 def main(spark):
-    # train hdfs:/user/ss16270_nyu_edu/als_train_set.parquet
-    # val hdfs:/user/ss16270_nyu_edu/als_val_set.parquet
     start = time.time()
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
@@ -39,8 +31,9 @@ def main(spark):
     print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    userRecs = model.recommendForAllUsers(100)
-    userRecs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
+    user_recs = model.recommendForAllUsers(100)
+    user_recs.show()
+    # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
     end = time.time()
 
@@ -51,5 +44,5 @@ if __name__ == "__main__":
     # Create the spark session object
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()
 
-    main(spark, userID)
+    main(spark)
     spark.stop()

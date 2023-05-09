@@ -1,4 +1,3 @@
-import os
 import time
 
 from pyspark.sql import SparkSession
@@ -37,10 +36,27 @@ def main(spark):
     train_set = train_data.join(rsmid_map, on='recording_msid', how='left')
     train_set = train_set.select('user_id', 'rmsid_int', 'timestamp')
     train_set = train_set.groupBy('user_id', 'rmsid_int').agg(F.countDistinct("timestamp").alias("ratings"))
-    train_set.show()
+    train_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet', mode="overwrite")
 
-    # print("Converting recording_msids to integer for val using the map and generating counts for training ALS")
-    # val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
+    print("Written train set")
+
+    print("Converting recording_msids to integer for val using the map and generating counts for training ALS")
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_joined.parquet')
+    val_set = val_data.join(rsmid_map, on='recording_msid', how='left')
+    val_set = val_set.select('user_id', 'rmsid_int', 'timestamp')
+    val_set = val_set.groupBy('user_id', 'rmsid_int').agg(F.countDistinct("timestamp").alias("ratings"))
+    val_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet', mode="overwrite")
+
+    print("Written val set")
+
+    print("Converting recording_msids to integer for test using the map and generating counts for training ALS")
+    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
+    test_set = test_data.join(rsmid_map, on='recording_msid', how='left')
+    test_set = test_set.select('user_id', 'rmsid_int', 'timestamp')
+    test_set = test_set.groupBy('user_id', 'rmsid_int').agg(F.countDistinct("timestamp").alias("ratings"))
+    test_set.write.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet', mode="overwrite")
+
+    print("Written test set")
 
     end = time.time()
     print(f"Time for execution:{end - start}")
@@ -51,3 +67,4 @@ if __name__ == "__main__":
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()
 
     main(spark)
+    spark.stop()

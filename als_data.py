@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     # Calling main
     main(spark, userID)
+    spark.stop()
 
 
 

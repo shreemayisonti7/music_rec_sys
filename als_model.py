@@ -11,7 +11,9 @@ def main(spark):
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
-    val_data = val_data.dropna() #Check why you might get null in val
+    #This is to handle the case where an item is in val/test but not in train.
+    val_data = val_data.dropna()
+    test_data = test_data.dropna()
 
     als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
               coldStartStrategy="drop", implicitPrefs=True)

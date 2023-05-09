@@ -1,4 +1,3 @@
-import os
 import time
 
 from pyspark.sql import SparkSession
@@ -10,7 +9,9 @@ def main(spark):
     start = time.time()
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
-    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
+    # test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
+
+    val_data = val_data.dropna()
 
     als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
               coldStartStrategy="drop", implicitPrefs=True)
@@ -25,10 +26,10 @@ def main(spark):
     print("Root-mean-square val error = " + str(rmse_val))
 
     # Evaluate the model by computing the RMSE on the test data
-    pred_test = model.transform(test_data)
-    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    rmse_test = evaluator.evaluate(pred_test)
-    print("Root-mean-square test error = " + str(rmse_test))
+    # pred_test = model.transform(test_data)
+    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    # rmse_test = evaluator.evaluate(pred_test)
+    # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
     user_recs = model.recommendForAllUsers(100)

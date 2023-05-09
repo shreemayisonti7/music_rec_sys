@@ -36,7 +36,7 @@ def main(spark):
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
     train_set = train_data.join(rsmid_map, on='recording_msid', how='left')
     train_set = train_set.select('user_id', 'rmsid_int', 'timestamp')
-    train_set = train_set.groupBy('user_id', 'rmsid_int').agg(F.count("timestamp").alias("ratings"))
+    train_set = train_set.groupBy('user_id', 'rmsid_int').agg(F.countDistinct("timestamp").alias("ratings"))
     train_set.show()
 
     # print("Converting recording_msids to integer for val using the map and generating counts for training ALS")

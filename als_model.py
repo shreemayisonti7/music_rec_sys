@@ -11,7 +11,7 @@ def main(spark):
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
-    val_data = val_data.dropna()
+    val_data = val_data.dropna() #Check why you might get null in val
 
     als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
               coldStartStrategy="drop", implicitPrefs=True)
@@ -34,7 +34,7 @@ def main(spark):
 
     # Generate top 10 movie recommendations for each user
     user_recs = model.recommendForAllUsers(100)
-    user_recs.show()
+    # user_recs.show()
     # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
     end = time.time()

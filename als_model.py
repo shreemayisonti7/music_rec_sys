@@ -11,58 +11,43 @@ from pyspark.sql import Row
 from pyspark.ml.tuning import ParamGridBuilder
 from pyspark.ml import Pipeline
 
-def main(spark, userID):
-    print("---------------------------Converting recording_msids to integer for train---------------------------------")
+
+def main(spark):
+    # train hdfs:/user/ss16270_nyu_edu/als_train_set.parquet
+    # val hdfs:/user/ss16270_nyu_edu/als_val_set.parquet
     start = time.time()
-    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_als.parquet')
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_als.parquet')
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
+    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet ')
 
-    train_data_f = train_data.select("user_id","recording_index")
-    grouped_data = train_data_f.groupBy("user_id","recording_index").agg(F.count("recording_index").
-                                                                         alias("rec_frequency"))
+    als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+              coldStartStrategy="drop", implicitPrefs=True)
+    model = als.fit(train_data)
 
-    val_data_f = val_data.select("user_id","recording_index")
-    grouped_data_v = val_data_f.groupBy("user_id", "recording_index").agg(F.count("recording_index").
-                                                                          alias("rec_frequency"))
-
-
-    als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="recording_index", ratingCol="rec_frequency",
-              coldStartStrategy="drop",implicitPrefs=True)
-    model = als.fit(grouped_data)
+    # Evaluate the model by computing the RMSE on the val data
+    pred_val = model.transform(val_data)
+    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    rmse_val = evaluator.evaluate(pred_val)
+    print("Root-mean-square error = " + str(rmse_val))
 
     # Evaluate the model by computing the RMSE on the test data
-    predictions = model.transform(grouped_data_v)
-    evaluator = RegressionEvaluator(metricName="rmse", labelCol="rec_frequency",
-                                    predictionCol="prediction")
-    rmse = evaluator.evaluate(predictions)
-    print("Root-mean-square error = " + str(rmse))
+    pred_test = model.transform(test_data)
+    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    rmse_test = evaluator.evaluate(pred_test)
+    print("Root-mean-square error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
     userRecs = model.recommendForAllUsers(100)
     userRecs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
-    end=time.time()
+    end = time.time()
 
-    print(f"Total time for execution:{end-start}")
-
-
-
+    print(f"Total time for execution:{end - start}")
 
 
 if __name__ == "__main__":
     # Create the spark session object
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()
 
-    # Get user userID from the command line to access HDFS folder
-    userID = os.environ['USER']
-    print(userID)
-
-    # Calling main
     main(spark, userID)
     spark.stop()
-
-
-
-
-
-

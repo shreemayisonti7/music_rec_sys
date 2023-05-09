@@ -8,22 +8,23 @@ import pyspark.sql.functions as F
 
 def main(spark):
 
-    # print("---------------------------Creating rmsid str-int map and saving as parquet------------------------------")
-    # start = time.time()
-    #
-    # train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
-    #
-    # unique_msids = train_data.select('recording_msid').distinct()  #<class 'pyspark.sql.dataframe.DataFrame'>
-    # print(unique_msids.count())
-    #
-    # window_order_by_rmsid = Window.orderBy('recording_msid')
-    # rmsid_mapping = unique_msids.select('recording_msid', F.rank().over(window_order_by_rmsid).alias('rmsid_int'))
-    # print(rmsid_mapping.count())
-    #
-    # rmsid_mapping.write.parquet(f'hdfs:/user/ss16270_nyu_edu/rmsid_str_int_map.parquet', mode="overwrite")
-    #
-    # end = time.time()
-    # print(f"Time for creation and saving a map:{end - start}")
+    print("---------------------------Creating rmsid str-int map and saving as parquet------------------------------")
+    start = time.time()
+
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
+
+    unique_msids = train_data.select('recording_msid').distinct()  #<class 'pyspark.sql.dataframe.DataFrame'>
+    print(unique_msids.count())
+
+    window_order_by_rmsid = Window.orderBy('recording_msid')
+    rmsid_mapping = unique_msids.select('recording_msid', F.dense_rank().over(window_order_by_rmsid).alias(
+    'rmsid_int'))
+    print(rmsid_mapping.count())
+
+    rmsid_mapping.write.parquet(f'hdfs:/user/ss16270_nyu_edu/rmsid_str_int_map.parquet', mode="overwrite")
+
+    end = time.time()
+    print(f"Time for creation and saving a map:{end - start}")
 
 #######################################################################################################################
     start = time.time()

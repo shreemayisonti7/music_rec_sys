@@ -50,7 +50,7 @@ def main(spark):
 
     print("Written val set")
 
-    print("Converting recording_msids to integer for test using the map and generating counts for training ALS")
+    print("Converting recording_msids to integer for test using the map and generating counts for evaluating ALS")
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_full_joined.parquet')
     test_set = test_data.join(rsmid_map, on='recording_msid', how='left')
     test_set = test_set.select('user_id', 'rmsid_int', 'timestamp')

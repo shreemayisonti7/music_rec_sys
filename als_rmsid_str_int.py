@@ -14,11 +14,11 @@ def main(spark):
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
 
     unique_msids = train_data.select('recording_msid').distinct()  #<class 'pyspark.sql.dataframe.DataFrame'>
-    unique_msids.count().show()
+    print(unique_msids.count())
 
     window_order_by_rmsid = Window.orderBy('recording_msid')
     rmsid_mapping = unique_msids.select('recording_msid', rank().over(window_order_by_rmsid).alias('rmsid_int'))
-    rmsid_mapping.count().show()
+    print(rmsid_mapping.count())
 
     rmsid_mapping.write.parquet(f'hdfs:/user/ss16270_nyu_edu/rmsid_str_int_map.parquet', mode="overwrite")
 
@@ -29,12 +29,12 @@ def main(spark):
     start = time.time()
 
     rsmid_map = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/rmsid_str_int_map.parquet')
-    rsmid_map.count()
+    print(rsmid_map.count())
     print("Converting recording_msids to integer for train using the map and generating counts for training ALS")
 
     # train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/train_full_joined.parquet')
     # train_set = train_data.join(rsmid_map, on='recording_msid', how='left')
-    # train_set = train_set.select('user_id', 'timestamp')
+    # train_set = train_set.select('user_id',)
     #
     #
     # print("Converting recording_msids to integer for val using the map and generating counts for training ALS")

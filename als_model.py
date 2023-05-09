@@ -26,15 +26,17 @@ def main(spark):
 
     # Evaluate the model by computing the RMSE on the val data
     pred_val = model.transform(val_data)
+    print("Printing model transformed validation data")
+    pred_val.show()
     evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
     rmse_val = evaluator.evaluate(pred_val)
-    print("Root-mean-square error = " + str(rmse_val))
+    print("Root-mean-square val error = " + str(rmse_val))
 
     # Evaluate the model by computing the RMSE on the test data
     pred_test = model.transform(test_data)
     evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
     rmse_test = evaluator.evaluate(pred_test)
-    print("Root-mean-square error = " + str(rmse_test))
+    print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
     userRecs = model.recommendForAllUsers(100)

@@ -3,7 +3,8 @@ import time
 from pyspark.sql import SparkSession
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
-
+from pyspark.sql.window import Window
+import pyspark.sql.functions as F
 
 def main(spark):
     start = time.time()
@@ -20,23 +21,23 @@ def main(spark):
     model = als.fit(train_data)
 
     # Evaluate the model by computing the RMSE on the val data
-    pred_val = model.transform(val_data)
-    print("Printing model transformed validation data")
-    pred_val.show()
-    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    rmse_val = evaluator.evaluate(pred_val)
-    print("Root-mean-square val error = " + str(rmse_val))
+    # pred_val = model.transform(val_data)
+    # print("Printing model transformed validation data")
+    # pred_val.show()
+    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    # rmse_val = evaluator.evaluate(pred_val)
+    # print("Root-mean-square val error = " + str(rmse_val))
 
     # Evaluate the model by computing the RMSE on the test data
-    pred_test = model.transform(test_data)
-    pred_test.show()
-    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    rmse_test = evaluator.evaluate(pred_test)
-    print("Root-mean-square test error = " + str(rmse_test))
+    # pred_test = model.transform(test_data)
+    # pred_test.show()
+    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    # rmse_test = evaluator.evaluate(pred_test)
+    # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    # user_recs = model.recommendForAllUsers(100)
-    # user_recs.show()
+    user_recs = model.recommendForUserSubset(val_data,100)
+    user_recs.show()
     # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
     end = time.time()

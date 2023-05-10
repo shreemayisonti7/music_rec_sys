@@ -46,7 +46,10 @@ def main(spark):
     print("Mapping")
     user_recs = user_recs.rdd.map(lambda x: (x[0],[list[i] for i in x[1]]))
 
+    print("Converting to DF")
     user_f = user_recs.toDF(["user_id","recording_index"])
+
+    print("Showing")
     user_f.show()
 
     # user_recs.repartition(50,"user_id")

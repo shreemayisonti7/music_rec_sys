@@ -17,7 +17,7 @@ def main(spark):
     val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     val_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet', mode="overwrite")
 
-    val_data = val_data.limit(1)
+    val_data_1 = val_data.select("user_id").limit(1)
     #test_data = test_data.dropna()
 
     # als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -44,7 +44,7 @@ def main(spark):
     model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
 
     print("Making recommendations")
-    user_recs = model.recommendForUserSubset(val_data["user_id"],100)
+    user_recs = model.recommendForUserSubset(val_data_1,100)
 
     #user_recs.repartition(50,"user_id")
     print("Mapping")

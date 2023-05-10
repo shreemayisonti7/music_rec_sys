@@ -13,6 +13,7 @@ def main(spark):
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
+    val_data = val_data.select('user_id').distinct()
     val_data = val_data.dropna()
     #test_data = test_data.dropna()
 
@@ -36,9 +37,16 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
+    print("Loading model")
     model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
+
+    print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data,100)
+
+    print("Saving recs")
     user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
+
+    print("Showing recs")
     user_recs.take(1)
 
     #

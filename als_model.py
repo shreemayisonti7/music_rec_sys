@@ -44,7 +44,7 @@ def main(spark):
     user_recs = model.recommendForUserSubset(val_data,100)
 
     print("Mapping")
-    user_recs = user_recs.rdd.map(lambda x: (x[0],[list[i][0] for i in x[1]]))
+    user_recs = user_recs.rdd.map(lambda x: (x[0],[list[i] for i in x[1]]))
 
     user_f = user_recs.toDF(["user_id","recording_index"])
     user_f.show()

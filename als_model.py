@@ -44,7 +44,7 @@ def main(spark):
     user_recs = model.recommendForUserSubset(val_data,100)
 
     print("Showing recs")
-    user_recs.show()
+    print(user_recs.take(1))
 
     # user_recs.repartition(50,"user_id")
     #

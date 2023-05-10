@@ -53,7 +53,7 @@ def main(spark):
     print("Converting to DF")
     #user_recs = user_recs.repartition(50, "user_id")
     user_f = user_recs.toDF(["user_id","recs"])
-
+    user_f.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs_als.parquet', mode="overwrite")
 
     #val_data.repartition(50,"user_id")
 

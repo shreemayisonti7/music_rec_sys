@@ -19,7 +19,7 @@ def main(spark):
     als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
               coldStartStrategy="drop", implicitPrefs=True)
     model = als.fit(train_data)
-
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
     # Evaluate the model by computing the RMSE on the val data
     # pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")
@@ -36,10 +36,10 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    user_recs = model.recommendForUserSubset(val_data,100)
-    # user_recs.take(1)
-    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
-
+    # user_recs = model.recommendForUserSubset(val_data,100)
+    # # user_recs.take(1)
+    # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
+    #
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

@@ -43,8 +43,8 @@ def main(spark):
     print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data,100)
 
-    user_recs = user_recs.rdd.map(lambda x: (x[0],[list[i] for i in x[1]]))
-    print(user_recs.take(1))
+    user_recs = user_recs.rdd.map(lambda x: (x[0],[list[i][0] for i in x[1]]))
+    print(user_recs)
 
     # user_recs.repartition(50,"user_id")
     #

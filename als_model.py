@@ -37,8 +37,8 @@ def main(spark):
 
     # Generate top 10 movie recommendations for each user
     user_recs = model.recommendForUserSubset(val_data,100)
-    user_recs.show()
-    # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
+    user_recs.take(1)
+    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
 
     end = time.time()
 

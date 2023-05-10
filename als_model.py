@@ -43,13 +43,15 @@ def main(spark):
     print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data,100)
 
-    print("Saving recs")
-    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
-
     print("Showing recs")
     user_recs.take(1)
 
-    #
+    user_recs.repartition(50,"user_id")
+
+    print("Saving recs")
+    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
+
+
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

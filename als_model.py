@@ -14,7 +14,7 @@ def main(spark):
 
     #This is to handle the case where an item is in val/test but not in train.
     val_data = val_data.dropna()
-    val_data = val_data.groupBy('user_id').agg(F.collect_set('recording_msid').alias('ground_truth_songs'))
+    val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     val_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet', mode="overwrite")
 
     val_data = val_data.limit(1)

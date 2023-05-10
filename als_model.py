@@ -13,7 +13,7 @@ def main(spark):
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
-    val_data = val_data.select('user_id').distinct().limit(2)
+    val_data = val_data.select('user_id').distinct()
     val_data = val_data.dropna()
     #test_data = test_data.dropna()
 
@@ -43,13 +43,10 @@ def main(spark):
     print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data,100)
 
-    print("Showing recs")
-    print(user_recs.take(1))
+    user_recs.repartition(50,"user_id")
 
-    # user_recs.repartition(50,"user_id")
-    #
-    # print("Saving recs")
-    # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
+    print("Saving recs")
+    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
 
 
     end = time.time()

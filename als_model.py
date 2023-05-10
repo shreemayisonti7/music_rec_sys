@@ -9,13 +9,13 @@ import pyspark.sql.functions as F
 def main(spark):
     start = time.time()
     #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
+    #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
-    val_data = val_data.dropna()
-    val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
-    val_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet', mode="overwrite")
+    #val_data = val_data.dropna()
+    #val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
 
     val_data_1 = val_data.select("user_id")
     #test_data = test_data.dropna()
@@ -51,18 +51,17 @@ def main(spark):
     user_recs = user_recs.rdd.map(lambda x: (x[0],[list(i)[0] for i in x[1]]))
 
     print("Converting to DF")
+    #user_recs = user_recs.repartition(50, "user_id")
     user_f = user_recs.toDF(["user_id","recs"])
-    user_recs.repartition(50, "user_id")
 
-    val_data.repartition(50,"user_id")
+
+    #val_data.repartition(50,"user_id")
 
     print("Joining")
     user_final = val_data.join(user_f,on="user_id",how="left")
 
-    user_final.repartition(50,"user_id")
+    #user_final.repartition(50,"user_id")
     user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
-
-
 
     end = time.time()
 

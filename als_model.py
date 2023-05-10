@@ -13,8 +13,11 @@ def main(spark):
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
-    val_data = val_data.select('user_id').distinct().limit(1)
     val_data = val_data.dropna()
+    val_data = val_data.groupBy('user_id').agg(F.collect_set('recording_msid').alias('ground_truth_songs'))
+    val_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet', mode="overwrite")
+
+    val_data = val_data.limit(1)
     #test_data = test_data.dropna()
 
     # als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -41,18 +44,23 @@ def main(spark):
     model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
 
     print("Making recommendations")
-    user_recs = model.recommendForUserSubset(val_data,100)
+    user_recs = model.recommendForUserSubset(val_data["user_id"],100)
 
-    print(user_recs.take(1))
-
+    #user_recs.repartition(50,"user_id")
     print("Mapping")
     user_recs = user_recs.rdd.map(lambda x: (x[0],[list(i)[0] for i in x[1]]))
+
+    print("Showing")
+    print(user_recs.take(1))
 
     # print("Converting to DF")
     # user_f = user_recs.toDF(["user_id","recording_index"])
 
+    print("Joining")
+    user_f = val_data.join(user_recs,on="user_id",how="left")
+
     print("Showing")
-    print(user_recs.take(1))
+    print(user_f.take(1))
 
     # user_recs.repartition(50,"user_id")
     #

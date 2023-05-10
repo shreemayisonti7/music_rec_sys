@@ -52,7 +52,7 @@ def main(spark):
     # user_f = user_recs.toDF(["user_id","recording_index"])
 
     print("Showing")
-    print(user_f.take(1))
+    print(user_recs.take(1))
 
     # user_recs.repartition(50,"user_id")
     #

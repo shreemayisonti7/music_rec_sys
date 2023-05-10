@@ -17,7 +17,7 @@ def main(spark):
     val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     val_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet', mode="overwrite")
 
-    val_data_1 = val_data.select("user_id").limit(1)
+    val_data_1 = val_data.select("user_id")
     #test_data = test_data.dropna()
 
     # als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -50,22 +50,18 @@ def main(spark):
     print("Mapping")
     user_recs = user_recs.rdd.map(lambda x: (x[0],[list(i)[0] for i in x[1]]))
 
-    print("Showing")
-    print(user_recs.take(1))
-
     print("Converting to DF")
     user_f = user_recs.toDF(["user_id","recs"])
+    user_recs.repartition(50, "user_id")
+
+    val_data.repartition(50,"user_id")
 
     print("Joining")
     user_final = val_data.join(user_f,on="user_id",how="left")
 
-    print("Showing")
-    print(user_final.take(1))
+    user_final.repartition(50,"user_id")
+    user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
 
-    # user_recs.repartition(50,"user_id")
-    #
-    # print("Saving recs")
-    # user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
 
 
     end = time.time()

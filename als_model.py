@@ -44,7 +44,7 @@ def main(spark):
     user_recs = model.recommendForUserSubset(val_data,100)
 
     print("Saving recs")
-    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet', mode="overwrite")
+    user_recs.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs.parquet', mode="overwrite")
 
     print("Showing recs")
     user_recs.take(1)

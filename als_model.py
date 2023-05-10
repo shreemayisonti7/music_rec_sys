@@ -53,14 +53,14 @@ def main(spark):
     print("Showing")
     print(user_recs.take(1))
 
-    # print("Converting to DF")
-    # user_f = user_recs.toDF(["user_id","recording_index"])
+    print("Converting to DF")
+    user_f = user_recs.toDF(["user_id","recs"])
 
     print("Joining")
-    user_f = val_data.join(user_recs,on="user_id",how="left")
+    user_final = val_data.join(user_f,on="user_id",how="left")
 
     print("Showing")
-    print(user_f.take(1))
+    print(user_final.take(1))
 
     # user_recs.repartition(50,"user_id")
     #

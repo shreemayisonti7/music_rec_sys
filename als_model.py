@@ -6,6 +6,55 @@ from pyspark.ml.recommendation import ALS, ALSModel
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
 
+
+def average_precision_calculator(pred_songs, true_songs):
+    if len(true_songs) <= 0 or len(pred_songs) <= 0:
+        return 0
+    cumulative_average_precision = 0
+    positives = 0
+    for i in range(len(pred_songs)):
+        if pred_songs[i] in true_songs:
+            positives += 1
+            cumulative_average_precision += positives / (i + 1)
+    if positives == 0:
+        return 0
+    return cumulative_average_precision / positives
+
+# def reciprocal_rank_calculator(pred_songs, true_songs):
+#     if len(true_songs) <= 0 or len(pred_songs) <= 0:
+#         return 0
+#     for i in range(len(pred_songs)):
+#         if pred_songs[i] in true_songs:
+#             return 1 / (i + 1)
+#     return 0
+
+def set_to_list(predicted_recs):
+    new_recs = []
+    for i in predicted_recs:
+        new_i = list(i)
+        new_recs.append(new_i[0])
+
+    return new_recs
+
+def evaluator(test_set):
+    udf_process = F.udf(lambda recs:
+                        set_to_list(recs))
+    test_set = test_set.withColumn('recs_1', udf_process(F.col('recs')))
+    udf_ap = F.udf(lambda recs_1,ground_truth_songs:
+                   average_precision_calculator(recs_1, ground_truth_songs))
+    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recs_1','ground_truth_songs')))
+
+    # udf_rr = F.udf(lambda recs,ground_truth_songs:
+    #                reciprocal_rank_calculator(recs, ground_truth_songs))
+    #
+    # test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('recs','ground_truth_songs')))
+
+    mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
+                                          ).collect()[0]['mean_average_precision']
+    # mean_reciprocal_rank = test_set.agg(F.mean(F.col("reciprocal_rank")).alias("mean_reciprocal_rank")
+    #                                     ).collect()[0]['mean_reciprocal_rank']
+    return mean_average_precision
+
 def main(spark):
     start = time.time()
     #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
@@ -46,22 +95,18 @@ def main(spark):
     print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data_1,100)
 
-    #user_recs.repartition(50,"user_id")
-    print("Mapping")
-    user_recs = user_recs.rdd.map(lambda x: (x[0],[list(i)[0] for i in x[1]]))
-
     print("Converting to DF")
     #user_recs = user_recs.repartition(50, "user_id")
-    user_f = user_recs.toDF(["user_id","recs"])
-    user_f.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_recs_als.parquet', mode="overwrite")
-
-    #val_data.repartition(50,"user_id")
+    user_f = user_recs.toDF("user_id","recs")
 
     print("Joining")
     user_final = val_data.join(user_f,on="user_id",how="left")
 
     #user_final.repartition(50,"user_id")
     user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+
+    current_map= evaluator(user_final)
+    print(f"MAP:{current_map}")
 
     end = time.time()
 

@@ -8,13 +8,13 @@ import pyspark.sql.functions as F
 
 
 def average_precision_calculator(pred_songs, true_songs):
-    pred_songs = set_to_list(pred_songs)
-    if len(true_songs) <= 0 or len(pred_songs) <= 0:
+    pred_songs_1 = set_to_list(pred_songs)
+    if len(true_songs) <= 0 or len(pred_songs_1) <= 0:
         return 0
     cumulative_average_precision = 0
     positives = 0
-    for i in range(len(pred_songs)):
-        if pred_songs[i] in true_songs:
+    for i in range(len(pred_songs_1)):
+        if pred_songs_1[i] in true_songs:
             positives += 1
             cumulative_average_precision += positives / (i + 1)
     if positives == 0:
@@ -38,9 +38,9 @@ def set_to_list(predicted_recs):
     return new_recs
 
 def evaluator(test_set):
-    udf_ap = F.udf(lambda recs_1,ground_truth_songs:
-                   average_precision_calculator(recs_1, ground_truth_songs))
-    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recs_1','ground_truth_songs')))
+    udf_ap = F.udf(lambda recs,ground_truth_songs:
+                   average_precision_calculator(recs, ground_truth_songs))
+    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recs','ground_truth_songs')))
 
     # udf_rr = F.udf(lambda recs,ground_truth_songs:
     #                reciprocal_rank_calculator(recs, ground_truth_songs))

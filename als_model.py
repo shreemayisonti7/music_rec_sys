@@ -94,16 +94,19 @@ def main(spark):
     user_recs = model.recommendForUserSubset(val_data_1,100)
 
     print("Converting to DF")
-    #user_recs = user_recs.repartition(50, "user_id")
     user_f = user_recs.toDF("user_id","recs")
+    user_recs_1 = user_f.repartition(50, "user_id")
+
+    val_data_1 = val_data.repartition(50, "user_id")
 
     print("Joining")
-    user_final = val_data.join(user_f,on="user_id",how="left")
+    user_final = val_data_1.join(user_recs_1,on="user_id",how="left")
+    user_final_1 = user_final.repartition(50, "user_id")
 
     #user_final.repartition(50,"user_id")
-    user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+    user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
 
-    current_map= evaluator(user_final)
+    current_map= evaluator(user_final_1)
     print(f"MAP:{current_map}")
 
     end = time.time()

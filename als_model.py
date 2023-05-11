@@ -8,6 +8,7 @@ import pyspark.sql.functions as F
 
 
 def average_precision_calculator(pred_songs, true_songs):
+    pred_songs = set_to_list(pred_songs)
     if len(true_songs) <= 0 or len(pred_songs) <= 0:
         return 0
     cumulative_average_precision = 0
@@ -37,9 +38,6 @@ def set_to_list(predicted_recs):
     return new_recs
 
 def evaluator(test_set):
-    udf_process = F.udf(lambda recs:
-                        set_to_list(recs))
-    test_set = test_set.withColumn('recs_1', udf_process(F.col('recs')))
     udf_ap = F.udf(lambda recs_1,ground_truth_songs:
                    average_precision_calculator(recs_1, ground_truth_songs))
     test_set = test_set.withColumn('average_precision', udf_ap(F.col('recs_1','ground_truth_songs')))

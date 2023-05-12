@@ -84,16 +84,16 @@ def main(spark):
     # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
     #
     print("Making recommendations")
-    val_data_1 = val_data_1.repartition(50, "user_id")
+    val_data_1 = val_data_1.repartition(100, "user_id")
     user_recs = model.recommendForUserSubset(val_data_1,100)
     #
     print("Converting recs")
-    user_recs = user_recs.repartition(50,"user_id")
+    user_recs = user_recs.repartition(100,"user_id")
     user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
 
     print("Joining")
     user_final = val_data.join(user_recs,on="user_id",how="left")
-    user_final = user_final.repartition(50,"user_id")
+    user_final = user_final.repartition(100,"user_id")
     # print("Writing")
     # user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
     print("Mapping")

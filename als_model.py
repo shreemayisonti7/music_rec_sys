@@ -48,7 +48,7 @@ def evaluator(test_set):
 
 def main(spark):
     start = time.time()
-    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
@@ -60,10 +60,10 @@ def main(spark):
     val_data_1 = val_data.select("user_id")
     #test_data = test_data.dropna()
 
-    # als = ALS(maxIter=5, regParam=0.01, rank=15, alpha=10, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-    #           coldStartStrategy="drop", implicitPrefs=True)
-    # model = als.fit(train_data)
-    # model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+    als = ALS(maxIter=10, regParam=0.01, rank=25, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+               coldStartStrategy="drop", implicitPrefs=True)
+    model = als.fit(train_data)
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
     # Evaluate the model by computing the RMSE on the val data
     # pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")
@@ -80,8 +80,8 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
+    # print("Loading model")
+    # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
     #
     print("Making recommendations")
     val_data_1 = val_data_1.repartition(50, "user_id")

@@ -95,17 +95,17 @@ def main(spark):
     #
     print("Joining")
     user_final = val_data.join(user_recs,on="user_id",how="left")
-
-    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
+    user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+    #user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
 
     # user_final_1 = user_final.repartition(50, "user_id")
     #
     # #user_final.repartition(50,"user_id")
     # user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
     #
-    print("Metrics")
-    metric = RankingMetrics(user_final_1)
-    print(f"MAP is {metric.meanAveragePrecision}")
+    # print("Metrics")
+    # metric = RankingMetrics(user_final_1)
+    # print(f"MAP is {metric.meanAveragePrecision}")
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

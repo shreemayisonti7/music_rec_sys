@@ -8,12 +8,12 @@ import pyspark.sql.functions as F
 from pyspark.sql.functions import col
 
 def average_precision_calculator(pred_songs, true_songs):
-    if len(true_songs) <= 0 or len(pred_songs_1) <= 0:
+    if len(true_songs) <= 0 or len(pred_songs) <= 0:
         return 0
     cumulative_average_precision = 0
     positives = 0
-    for i in range(len(pred_songs_1)):
-        if pred_songs_1[i] in true_songs:
+    for i in range(len(pred_songs)):
+        if pred_songs[i] in true_songs:
             positives += 1
             cumulative_average_precision += positives / (i + 1)
     if positives == 0:
@@ -29,16 +29,15 @@ def reciprocal_rank_calculator(pred_songs, true_songs):
     return 0
 
 
-def evaluator(baseline_predictions, test_set):
-    test_set = test_set.groupBy('user_id').agg(F.collect_list('recording_msid').alias('ground_truth_songs'))
-    udf_ap = F.udf(lambda ground_truth_songs:
-                   average_precision_calculator(baseline_predictions, ground_truth_songs))
-    test_set = test_set.withColumn('average_precision', udf_ap(F.col('ground_truth_songs')))
+def evaluator(test_set):
+    udf_ap = F.udf(lambda recommendations, ground_truth_songs:
+                   average_precision_calculator(recommendations, ground_truth_songs))
+    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recommendations','ground_truth_songs')))
 
-    udf_rr = F.udf(lambda ground_truth_songs:
-                   reciprocal_rank_calculator(baseline_predictions, ground_truth_songs))
+    udf_rr = F.udf(lambda recommendations,ground_truth_songs:
+                   reciprocal_rank_calculator(recommendations, ground_truth_songs))
 
-    test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('ground_truth_songs')))
+    test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('recommendations','ground_truth_songs')))
 
     mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
                                           ).collect()[0]['mean_average_precision']

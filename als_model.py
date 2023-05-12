@@ -85,19 +85,21 @@ def main(spark):
     print("Making recommendations")
     user_recs = model.recommendForUserSubset(val_data_1,100)
     #
+    print("Converting recs")
     user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
     # user_f = user_recs.toDF("user_id","recs")
     # user_recs_1 = user_f.repartition(50, "user_id")
     #
     # val_data_1 = val_data.repartition(50, "user_id")
     #
-    # print("Joining")
+    print("Joining")
     user_final = val_data.join(user_recs,on="user_id",how="left")
     # user_final_1 = user_final.repartition(50, "user_id")
     #
     # #user_final.repartition(50,"user_id")
     # user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
     #
+    print("Metrics")
     current_map, current_mrr= evaluator(user_final)
     print(f"MAP:{current_map}, MRR:{current_mrr}")
 

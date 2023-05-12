@@ -67,7 +67,7 @@ def main(spark):
     val_data_1 = val_data.select("user_id")
     #test_data = test_data.dropna()
 
-    als = ALS(maxIter=5, regParam=0.001, rank=100, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+    als = ALS(maxIter=5, regParam=0.01, rank=15, alpha=10, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
               coldStartStrategy="drop", implicitPrefs=True)
     model = als.fit(train_data)
     model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
@@ -90,10 +90,12 @@ def main(spark):
     # print("Loading model")
     # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
     #
-    # print("Making recommendations")
-    # user_recs = model.recommendForAllUsers(100)
+    print("Making recommendations")
+    user_recs = model.recommendForAllUsers(100)
     #
     # print("Converting to DF")
+    user_new = user_recs.limit(1)
+    user_new.show()
     # user_f = user_recs.toDF("user_id","recs")
     # user_recs_1 = user_f.repartition(50, "user_id")
     #

@@ -64,7 +64,7 @@ def main(spark):
     #val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
 
-    val_data_1 = val_data.select("user_id")
+    val_data_1 = val_data.select("user_id").limit(1)
     #test_data = test_data.dropna()
 
     # als = ALS(maxIter=5, regParam=0.01, rank=15, alpha=10, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -91,11 +91,11 @@ def main(spark):
     model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
     #
     print("Making recommendations")
-    user_recs = model.recommendForAllUsers(100)
+    user_recs = model.recommendForUserSubset(val_data_1,100)
     #
     # print("Converting to DF")
-    user_new = user_recs.limit(1)
-    print(user_new.take(1))
+    print("Printing user")
+    print(user_recs.take(1))
     # user_f = user_recs.toDF("user_id","recs")
     # user_recs_1 = user_f.repartition(50, "user_id")
     #

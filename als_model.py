@@ -95,7 +95,8 @@ def main(spark):
     #
     print("Joining")
     user_final = val_data.join(user_recs,on="user_id",how="left")
-    user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+    print("Writing")
+    user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
     #user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
 
     # user_final_1 = user_final.repartition(50, "user_id")

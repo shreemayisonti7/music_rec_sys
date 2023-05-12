@@ -55,7 +55,7 @@ def evaluator(test_set):
 
 def main(spark):
     start = time.time()
-    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
@@ -67,17 +67,17 @@ def main(spark):
     val_data_1 = val_data.select("user_id")
     #test_data = test_data.dropna()
 
-    # als = ALS(maxIter=5, regParam=0.001, rank=10, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-    #           coldStartStrategy="drop", implicitPrefs=True)
-    # model = als.fit(train_data)
-    # model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+    als = ALS(maxIter=5, regParam=0.001, rank=100, alpha=50, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+              coldStartStrategy="drop", implicitPrefs=True)
+    model = als.fit(train_data)
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
     # Evaluate the model by computing the RMSE on the val data
-    # pred_val = model.transform(val_data)
+    pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")
     # pred_val.show()
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    # rmse_val = evaluator.evaluate(pred_val)
-    # print("Root-mean-square val error = " + str(rmse_val))
+    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    rmse_val = evaluator.evaluate(pred_val)
+    print("Root-mean-square val error = " + str(rmse_val))
 
     # Evaluate the model by computing the RMSE on the test data
     # pred_test = model.transform(test_data)
@@ -87,27 +87,27 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # Generate top 10 movie recommendations for each user
-    print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
-
-    print("Making recommendations")
-    user_recs = model.recommendForUserSubset(val_data_1,100)
-
-    print("Converting to DF")
-    user_f = user_recs.toDF("user_id","recs")
-    user_recs_1 = user_f.repartition(50, "user_id")
-
-    val_data_1 = val_data.repartition(50, "user_id")
-
-    print("Joining")
-    user_final = val_data_1.join(user_recs_1,on="user_id",how="left")
-    user_final_1 = user_final.repartition(50, "user_id")
-
-    #user_final.repartition(50,"user_id")
-    user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
-
-    current_map= evaluator(user_final_1)
-    print(f"MAP:{current_map}")
+    # print("Loading model")
+    # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
+    #
+    # print("Making recommendations")
+    # user_recs = model.recommendForAllUsers(100)
+    #
+    # print("Converting to DF")
+    # user_f = user_recs.toDF("user_id","recs")
+    # user_recs_1 = user_f.repartition(50, "user_id")
+    #
+    # val_data_1 = val_data.repartition(50, "user_id")
+    #
+    # print("Joining")
+    # user_final = val_data_1.join(user_recs_1,on="user_id",how="left")
+    # user_final_1 = user_final.repartition(50, "user_id")
+    #
+    # #user_final.repartition(50,"user_id")
+    # user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+    #
+    # current_map= evaluator(user_final_1)
+    # print(f"MAP:{current_map}")
 
     end = time.time()
 

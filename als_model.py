@@ -5,7 +5,7 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS, ALSModel
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
-
+from pyspark.sql.functions import col
 
 def average_precision_calculator(pred_songs, true_songs):
     pred_songs_1 = set_to_list(pred_songs)

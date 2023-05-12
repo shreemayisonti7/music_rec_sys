@@ -32,12 +32,12 @@ def reciprocal_rank_calculator(pred_songs, true_songs):
 def evaluator(test_set):
     udf_ap = F.udf(lambda recommendations, ground_truth_songs:
                    average_precision_calculator(recommendations, ground_truth_songs))
-    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recommendations','ground_truth_songs')))
+    test_set = test_set.withColumn('average_precision', udf_ap(F.col('recommendations'),F.col('ground_truth_songs')))
 
     udf_rr = F.udf(lambda recommendations,ground_truth_songs:
                    reciprocal_rank_calculator(recommendations, ground_truth_songs))
 
-    test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('recommendations','ground_truth_songs')))
+    test_set = test_set.withColumn('reciprocal_rank', udf_rr(F.col('recommendations'),F.col('ground_truth_songs')))
 
     mean_average_precision = test_set.agg(F.mean(F.col("average_precision")).alias("mean_average_precision")
                                           ).collect()[0]['mean_average_precision']

@@ -6,6 +6,7 @@ from pyspark.ml.recommendation import ALS, ALSModel
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
 from pyspark.sql.functions import col
+from pyspark.mllib.evaluation import RankingMetrics
 
 def average_precision_calculator(pred_songs, true_songs):
     if len(true_songs) <= 0 or len(pred_songs) <= 0:
@@ -94,15 +95,17 @@ def main(spark):
     #
     print("Joining")
     user_final = val_data.join(user_recs,on="user_id",how="left")
+
+    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
+
     # user_final_1 = user_final.repartition(50, "user_id")
     #
     # #user_final.repartition(50,"user_id")
     # user_final_1.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
     #
     print("Metrics")
-    current_map, current_mrr= evaluator(user_final)
-    print(f"MAP:{current_map}, MRR:{current_mrr}")
-
+    metric = RankingMetrics(user_final_1)
+    print(f"MAP is {metric.meanAveragePrecision}")
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

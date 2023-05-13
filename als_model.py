@@ -82,7 +82,7 @@ def main(spark):
 
     # # Generate top 10 movie recommendations for each user
     print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l0001_a2_i10')
+    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
     #
     print("Making recommendations")
     val_data_1 = val_data_1.repartition(50, "user_id")

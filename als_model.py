@@ -61,10 +61,10 @@ def main(spark):
     # val_data_1 = val_data.select("user_id")
 
 
-    als = ALS(maxIter=15, regParam=0.0001, rank=25, alpha=10, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+    als = ALS(maxIter=10, regParam=0.1, rank=25, alpha=0.1, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
                coldStartStrategy="drop", implicitPrefs=True)
     model = als.fit(train_data)
-    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a10_i20')
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l1_a01_i10')
     # Evaluate the model by computing the RMSE on the val data
     # pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")

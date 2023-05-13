@@ -48,7 +48,7 @@ def evaluator(test_set):
 
 def main(spark):
     start = time.time()
-    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
@@ -56,15 +56,15 @@ def main(spark):
     #val_data = val_data.dropna()
     #val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
 
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
+    # val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
+    #
+    # val_data_1 = val_data.select("user_id")
 
-    val_data_1 = val_data.select("user_id")
 
-
-    # als = ALS(maxIter=10, regParam=0.01, rank=25, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-    #            coldStartStrategy="drop", implicitPrefs=True)
-    # model = als.fit(train_data)
-    # model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l01_a5_i10')
+    als = ALS(maxIter=10, regParam=0.001, rank=25, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+               coldStartStrategy="drop", implicitPrefs=True)
+    model = als.fit(train_data)
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
     # Evaluate the model by computing the RMSE on the val data
     # pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")
@@ -81,31 +81,31 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # # Generate top 10 movie recommendations for each user
-    print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l01_a5_i10')
+    # print("Loading model")
+    # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l01_a5_i10')
+    # #
+    # print("Making recommendations")
+    # val_data_1 = val_data_1.repartition(50, "user_id")
+    # user_recs = model.recommendForUserSubset(val_data_1,100)
+    # # #
+    # print("Converting recs")
+    # user_recs = user_recs.repartition(50,"user_id")
+    # user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
     #
-    print("Making recommendations")
-    val_data_1 = val_data_1.repartition(50, "user_id")
-    user_recs = model.recommendForUserSubset(val_data_1,100)
+    # print("Joining")
+    # user_final = val_data.join(user_recs,on="user_id",how="left")
+    # user_final = user_final.repartition(50,"user_id")
+    # # # print("Writing")
+    # # # user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
+    # print("Mapping")
+    # user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
     # #
-    print("Converting recs")
-    user_recs = user_recs.repartition(50,"user_id")
-    user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
-
-    print("Joining")
-    user_final = val_data.join(user_recs,on="user_id",how="left")
-    user_final = user_final.repartition(50,"user_id")
-    # # print("Writing")
-    # # user_final.write.parquet(f'hdfs:/user/ss16270_nyu_edu/val_eval_f.parquet', mode="overwrite")
-    print("Mapping")
-    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
-    #
-    # #
-    # # #user_final.repartition(50,"user_id")
-    # #
-    print("Metrics")
-    metric = RankingMetrics(user_final_1)
-    print(f"MAP is {metric.meanAveragePrecision}")
+    # # #
+    # # # #user_final.repartition(50,"user_id")
+    # # #
+    # print("Metrics")
+    # metric = RankingMetrics(user_final_1)
+    # print(f"MAP is {metric.meanAveragePrecision}")
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

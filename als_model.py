@@ -61,7 +61,7 @@ def main(spark):
     # val_data_1 = val_data.select("user_id")
 
 
-    als = ALS(maxIter=15, regParam=0.001, rank=25, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+    als = ALS(maxIter=15, regParam=0.0001, rank=25, alpha=10, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
                coldStartStrategy="drop", implicitPrefs=True)
     model = als.fit(train_data)
     model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a10_i20')

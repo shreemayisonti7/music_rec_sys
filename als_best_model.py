@@ -12,15 +12,24 @@ from pyspark.ml.tuning import ParamGridBuilder,CrossValidator
 from pyspark.ml import Pipeline
 
 def main(spark, userID):
-    print("---------------------------Converting recording_msids to integer for train---------------------------------")
-    best_model = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/best_recs.parquet')
+    print("---------------------------Tuning hyperparameters---------------------------------")
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
 
-    best_model.show()
-    # val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_full_als.parquet')
-    #
-    # val_data_f = val_data.groupBy('user_id').agg(F.collect_list('recording_index').alias('ground_truth_songs'))
-    #
-    # final_data = val_data.join
+    lambda_val = 0.0001
+    rank_val = [5,10,15,20,25]
+    alpha_val = 2
+
+    for i in range(len(rank_val)):
+        als = ALS(maxIter=10, regParam=lambda_val, rank=rank_val[i], alpha= alpha_val, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+           coldStartStrategy="drop", implicitPrefs=True)
+        model = als.fit(train_data)
+        pred_val = model.transform(val_data)
+        print("Printing model transformed validation data")
+        pred_val.show()
+        evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+        rmse_val = evaluator.evaluate(pred_val)
+        print(f'RMSE={rmse_val}, rank:{rank_val[i]}')
 
 if __name__ == "__main__":
     # Create the spark session object

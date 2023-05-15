@@ -17,7 +17,7 @@ def main(spark, userID):
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
 
     lambda_val = 0.0001
-    rank_val = [5,10,15,20,25]
+    rank_val = [15,20,25]
     alpha_val = 2
 
     for i in range(len(rank_val)):
@@ -25,8 +25,6 @@ def main(spark, userID):
            coldStartStrategy="drop", implicitPrefs=True)
         model = als.fit(train_data)
         pred_val = model.transform(val_data)
-        print("Printing model transformed validation data")
-        pred_val.show()
         evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
         rmse_val = evaluator.evaluate(pred_val)
         print(f'RMSE={rmse_val}, rank:{rank_val[i]}')

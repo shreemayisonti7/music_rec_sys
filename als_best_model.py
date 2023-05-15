@@ -51,50 +51,50 @@ def main(spark):
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
 
-    val_data_new = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
-    val_data_1 = val_data_new.select("user_id")
-    val_data_1 = val_data_1.repartition(50, "user_id")
-
-    lambda_val = 0.0001
-    rank_val = [20,25]
-    alpha_val = 2
-
-    for i in range(len(rank_val)):
-        als = ALS(maxIter=10, regParam=lambda_val, rank=rank_val[i], alpha= alpha_val, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-           coldStartStrategy="drop", implicitPrefs=True)
-        model = als.fit(train_data)
-        # pred_val = model.transform(val_data)
-        # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-        # rmse_val = evaluator.evaluate(pred_val)
-        # print(f'RMSE={rmse_val}, rank:{rank_val[i]}')
-
-        user_recs = model.recommendForUserSubset(val_data_1, 100)
-        print("Converting recs")
-        user_recs = user_recs.repartition(50, "user_id")
-        user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
-
-        print("Joining")
-        user_final = val_data_new.join(user_recs, on="user_id", how="left")
-        user_final = user_final.repartition(50, "user_id")
-
-        map_val, mrr_val = evaluator(user_final)
-        print(f"MAP is:{map_val}, MRR is:{mrr_val}")
-
-
-
-
-    # lambda_val = [0.001, 0.01, 0.05, 0.1, 1]
-    # rank_val = 25
+    # val_data_new = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
+    # val_data_1 = val_data_new.select("user_id")
+    # val_data_1 = val_data_1.repartition(50, "user_id")
+    #
+    # lambda_val = 0.0001
+    # rank_val = [20,25]
     # alpha_val = 2
     #
-    # for i in range(len(lambda_val)):
-    #     als = ALS(maxIter=10, regParam=lambda_val[i], rank=rank_val, alpha= alpha_val, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+    # for i in range(len(rank_val)):
+    #     als = ALS(maxIter=10, regParam=lambda_val, rank=rank_val[i], alpha= alpha_val, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
     #        coldStartStrategy="drop", implicitPrefs=True)
     #     model = als.fit(train_data)
-    #     pred_val = model.transform(val_data)
-    #     evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    #     rmse_val = evaluator.evaluate(pred_val)
-    #     print(f'RMSE={rmse_val}, rank:{lambda_val[i]}')
+    #     # pred_val = model.transform(val_data)
+    #     # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    #     # rmse_val = evaluator.evaluate(pred_val)
+    #     # print(f'RMSE={rmse_val}, rank:{rank_val[i]}')
+    #
+    #     user_recs = model.recommendForUserSubset(val_data_1, 100)
+    #     print("Converting recs")
+    #     user_recs = user_recs.repartition(50, "user_id")
+    #     user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+    #
+    #     print("Joining")
+    #     user_final = val_data_new.join(user_recs, on="user_id", how="left")
+    #     user_final = user_final.repartition(50, "user_id")
+    #
+    #     map_val, mrr_val = evaluator(user_final)
+    #     print(f"MAP is:{map_val}, MRR is:{mrr_val}")
+
+
+
+
+    lambda_val = [0.001, 0.01, 0.05, 0.1, 1]
+    rank_val = 25
+    alpha_val = 2
+
+    for i in range(len(lambda_val)):
+        als = ALS(maxIter=10, regParam=lambda_val[i], rank=rank_val, alpha= alpha_val, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+           coldStartStrategy="drop", implicitPrefs=True)
+        model = als.fit(train_data)
+        pred_val = model.transform(val_data)
+        evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+        rmse_val = evaluator.evaluate(pred_val)
+        print(f'RMSE={rmse_val}, rank:{lambda_val[i]}')
 
 if __name__ == "__main__":
     # Create the spark session object

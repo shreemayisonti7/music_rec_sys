@@ -83,7 +83,7 @@ def main(spark):
 
 
 
-    lambda_val = [0.001, 0.01, 0.05, 0.1, 1]
+    lambda_val = [0.001, 0.01, 0.1]
     rank_val = 25
     alpha_val = 2
 

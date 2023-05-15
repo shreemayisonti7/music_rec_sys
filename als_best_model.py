@@ -46,7 +46,7 @@ def evaluator(test_set):
                                         ).collect()[0]['mean_reciprocal_rank']
     return mean_average_precision, mean_reciprocal_rank
 
-def main(spark, userID):
+def main(spark):
     print("---------------------------Tuning hyperparameters---------------------------------")
     train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
@@ -100,12 +100,7 @@ if __name__ == "__main__":
     # Create the spark session object
     spark = SparkSession.builder.appName('checkpoint').getOrCreate()
 
-    # Get user userID from the command line to access HDFS folder
-    userID = os.environ['USER']
-    print(userID)
-
-    # Calling main
-    main(spark, userID)
+    main(spark)
     spark.stop()
 
 

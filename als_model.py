@@ -50,14 +50,14 @@ def main(spark):
     start = time.time()
     #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
-    #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
+    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
     #test_data = test_data.dropna()
     #test_data = test_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     #test_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet', mode="overwrite")
 
-    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
+    #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
 
     #test_data_1 = test_data.select("user_id")
 

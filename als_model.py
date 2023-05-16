@@ -104,8 +104,8 @@ def main(spark):
     user_final = test_data.join(user_recs,on="user_id",how="left")
     user_final = user_final.repartition(50,"user_id")
 
-    # print("Mapping")
-    # user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
+    print("Mapping")
+    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
 
     #map_val, mrr_val = evaluator(user_final)
     print("Metrics")

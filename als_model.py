@@ -59,7 +59,7 @@ def main(spark):
 
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
 
-    test_data_1 = test_data.select("user_id")
+    #test_data_1 = test_data.select("user_id")
 
 
     # als = ALS(maxIter=10, regParam=0.0001, rank=30, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -84,27 +84,34 @@ def main(spark):
     # # Generate top 10 movie recommendations for each user
     print("Loading model")
     model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l0001_a2_i10')
+
+    pred_val = model.transform(test_data)
+    print("Printing model transformed validation data")
+    pred_val.show()
+    evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
+    rmse_val = evaluator.evaluate(pred_val)
+    print("Root-mean-square val error = " + str(rmse_val))
     #
-    print("Making recommendations")
-    test_data_1 = test_data_1.repartition(50, "user_id")
-    user_recs = model.recommendForUserSubset(test_data_1,100)
-    # #
-    print("Converting recs")
-    user_recs = user_recs.repartition(50,"user_id")
-    user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
-
-    print("Joining")
-    user_final = test_data.join(user_recs,on="user_id",how="left")
-    user_final = user_final.repartition(50,"user_id")
-
-    print("Mapping")
-    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
-
-    #map_val, mrr_val = evaluator(user_final)
-    print("Metrics")
-    metric = RankingMetrics(user_final_1)
-    print(f"MAP is {metric.meanAveragePrecision}")
-    #print(f"MAP is:{map_val}, MRR is:{mrr_val}")
+    # print("Making recommendations")
+    # test_data_1 = test_data_1.repartition(50, "user_id")
+    # user_recs = model.recommendForUserSubset(test_data_1,100)
+    # # #
+    # print("Converting recs")
+    # user_recs = user_recs.repartition(50,"user_id")
+    # user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+    #
+    # print("Joining")
+    # user_final = test_data.join(user_recs,on="user_id",how="left")
+    # user_final = user_final.repartition(50,"user_id")
+    #
+    # print("Mapping")
+    # user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
+    #
+    # #map_val, mrr_val = evaluator(user_final)
+    # print("Metrics")
+    # metric = RankingMetrics(user_final_1)
+    # print(f"MAP is {metric.meanAveragePrecision}")
+    # #print(f"MAP is:{map_val}, MRR is:{mrr_val}")
     end = time.time()
 
     print(f"Total time for execution:{end - start}")

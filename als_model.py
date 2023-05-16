@@ -48,24 +48,28 @@ def evaluator(test_set):
 
 def main(spark):
     start = time.time()
-    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
-    #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
-    #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
+    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
+    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
     #test_data = test_data.dropna()
     #test_data = test_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
     #test_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet', mode="overwrite")
 
+    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
+
+    val_data_1 = val_data.select("user_id")
+
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
 
     test_data_1 = test_data.select("user_id")
 
 
-    # als = ALS(maxIter=10, regParam=0.0001, rank=30, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-    #            coldStartStrategy="drop", implicitPrefs=True)
-    # model = als.fit(train_data)
-    # model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r30_l0001_a5_i10')
+    als = ALS(maxIter=10, regParam=0.01, rank=15, alpha=2, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+               coldStartStrategy="drop", implicitPrefs=True)
+    model = als.fit(train_data)
+    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r15_l01_a2_i10')
     # Evaluate the model by computing the RMSE on the val data
     # pred_val = model.transform(val_data)
     # print("Printing model transformed validation data")
@@ -82,8 +86,8 @@ def main(spark):
     # print("Root-mean-square test error = " + str(rmse_test))
 
     # # Generate top 10 movie recommendations for each user
-    print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
+    # print("Loading model")
+    # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
 
     # pred_val = model.transform(test_data)
     # print("Printing model transformed validation data")
@@ -92,6 +96,28 @@ def main(spark):
     # rmse_val = evaluator.evaluate(pred_val)
     # print("Root-mean-square val error = " + str(rmse_val))
     #
+
+    print("Making recommendations")
+    val_data_1 = val_data_1.repartition(50, "user_id")
+    user_recs_v = model.recommendForUserSubset(val_data_1, 100)
+    # #
+    print("Converting recs")
+    user_recs_v = user_recs_v.repartition(50, "user_id")
+    user_recs_v = user_recs_v.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+
+    print("Joining")
+    user_final_v = val_data.join(user_recs_v, on="user_id", how="left")
+    user_final_v = user_final_v.repartition(50, "user_id")
+
+    print("Mapping")
+    user_final_v1 = user_final_v.rdd.map(lambda x: (x[1], x[2]))
+
+    # map_val, mrr_val = evaluator(user_final)
+    print("Metrics")
+    metric = RankingMetrics(user_final_v1)
+    print(f"MAP is {metric.meanAveragePrecision}")
+
+
     print("Making recommendations")
     test_data_1 = test_data_1.repartition(50, "user_id")
     user_recs = model.recommendForUserSubset(test_data_1,100)
@@ -109,7 +135,7 @@ def main(spark):
 
     #map_val, mrr_val = evaluator(user_final)
     print("Metrics")
-    metric = RankingMetrics(user_final)
+    metric = RankingMetrics(user_final_1)
     print(f"MAP is {metric.meanAveragePrecision}")
     #print(f"MAP is:{map_val}, MRR is:{mrr_val}")
     end = time.time()

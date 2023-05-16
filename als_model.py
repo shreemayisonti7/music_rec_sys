@@ -48,17 +48,18 @@ def evaluator(test_set):
 
 def main(spark):
     start = time.time()
-    train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
+    #train_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_train_set.parquet')
     #val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
-    #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
+    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
     #This is to handle the case where an item is in val/test but not in train.
-    #val_data = val_data.dropna()
-    #val_data = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
+    test_data = test_data.dropna()
+    test_data = test_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
+    test_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet', mode="overwrite")
 
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
+    #test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
 
-    val_data_1 = val_data.select("user_id")
+    test_data_1 = test_data.select("user_id")
 
 
     # als = ALS(maxIter=10, regParam=0.0001, rank=30, alpha=5, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
@@ -82,24 +83,24 @@ def main(spark):
 
     # # Generate top 10 movie recommendations for each user
     print("Loading model")
-    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
+    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l0001_a2_i10')
     #
     print("Making recommendations")
-    val_data_1 = val_data_1.repartition(50, "user_id")
-    user_recs = model.recommendForUserSubset(val_data_1,100)
+    test_data_1 = test_data_1.repartition(50, "user_id")
+    user_recs = model.recommendForUserSubset(test_data_1,100)
     # #
     print("Converting recs")
     user_recs = user_recs.repartition(50,"user_id")
     user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
 
     print("Joining")
-    user_final = val_data.join(user_recs,on="user_id",how="left")
+    user_final = test_data.join(user_recs,on="user_id",how="left")
     user_final = user_final.repartition(50,"user_id")
 
-    # print("Mapping")
-    # user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
+    print("Mapping")
+    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
 
-    map_val, mrr_val = evaluator(user_final)
+    map_val, mrr_val = evaluator(user_final_1)
     # print("Metrics")
     # metric = RankingMetrics(user_final_1)
     # print(f"MAP is {metric.meanAveragePrecision}")

@@ -52,92 +52,104 @@ def main(spark):
     val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_val_set.parquet')
     test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/als_test_set.parquet')
 
-    #This is to handle the case where an item is in val/test but not in train.
-    #test_data = test_data.dropna()
-    #test_data = test_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
-    #test_data.write.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet', mode="overwrite")
+    #Group by user_id to get final table for evaluation
+    val_data_eval = val_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
+    test_data_eval = test_data.groupBy('user_id').agg(F.collect_set('rmsid_int').alias('ground_truth_songs'))
 
-    val_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/val_data_eval.parquet')
-
-    val_data_1 = val_data.select("user_id")
-
-    test_data = spark.read.parquet(f'hdfs:/user/ss16270_nyu_edu/test_data_eval.parquet')
-
-    test_data_1 = test_data.select("user_id")
-
-
-    als = ALS(maxIter=10, regParam=0.01, rank=15, alpha=2, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
-               coldStartStrategy="drop", implicitPrefs=True)
-    model = als.fit(train_data)
-    model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model_r15_l01_a2_i10')
-    # Evaluate the model by computing the RMSE on the val data
-    # pred_val = model.transform(val_data)
-    # print("Printing model transformed validation data")
-    # pred_val.show()
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    # rmse_val = evaluator.evaluate(pred_val)
-    # print("Root-mean-square val error = " + str(rmse_val))
-
-    # Evaluate the model by computing the RMSE on the test data
-    # pred_test = model.transform(test_data)
-    # pred_test.show()
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    # rmse_test = evaluator.evaluate(pred_test)
-    # print("Root-mean-square test error = " + str(rmse_test))
-
-    # # Generate top 10 movie recommendations for each user
-    # print("Loading model")
-    # model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model_r25_l001_a5_i10')
-
-    # pred_val = model.transform(test_data)
-    # print("Printing model transformed validation data")
-    # pred_val.show()
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="ratings", predictionCol="prediction")
-    # rmse_val = evaluator.evaluate(pred_val)
-    # print("Root-mean-square val error = " + str(rmse_val))
-    #
-
-    print("Making recommendations")
+    val_data_1 = val_data_eval.select("user_id")
     val_data_1 = val_data_1.repartition(50, "user_id")
-    user_recs_v = model.recommendForUserSubset(val_data_1, 100)
-    # #
-    print("Converting recs")
-    user_recs_v = user_recs_v.repartition(50, "user_id")
-    user_recs_v = user_recs_v.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
 
-    print("Joining")
-    user_final_v = val_data.join(user_recs_v, on="user_id", how="left")
-    user_final_v = user_final_v.repartition(50, "user_id")
+    test_data_1 = test_data_eval.select("user_id")
+    test_data_1 = test_data_1.repartition(50, "user_id")
 
-    print("Mapping")
-    user_final_v1 = user_final_v.rdd.map(lambda x: (x[1], x[2]))
+    #Hyperparameter tuning over values
+    reg_val = [0.001, 0.01, 0.1]
+    rank_val = [5, 10, 15, 20, 25, 30]
+    alpha_val = [5,10,25,50]
 
-    # map_val, mrr_val = evaluator(user_final)
-    print("Metrics")
-    metric = RankingMetrics(user_final_v1)
-    print(f"MAP is {metric.meanAveragePrecision}")
+    #Looping through rank values for optimal rank
+    best_map = float('inf')
+    best_mrr = 0
+    best_rank = 0
+    for i in range(len(rank_val)):
+        print("Tuning rank")
+        print(f'Param_val:{rank_val[i]}')
+        als = ALS(maxIter=10, regParam=0.0001, rank=rank_val[i], alpha=2, userCol="user_id", itemCol="rmsid_int", ratingCol="ratings",
+               coldStartStrategy="drop", implicitPrefs=True)
+        model = als.fit(train_data)
 
+        #making recommendations
+        user_recs_v = model.recommendForUserSubset(val_data_1, 100)
+        user_recs_v = user_recs_v.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+        user_final_v = val_data.join(user_recs_v, on="user_id", how="left")
+        map_val, mrr_val = evaluator(user_final_v)
+        print(f'MAP:{map_val}, MRR:{mrr_val}')
+        if map_val<= best_map:
+            best_map = map_val
+            best_mrr = mrr_val
+            best_rank = rank_val[i]
+            model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
 
-    print("Making recommendations")
+    #Looping through alpha values for optimal value
+    best_alpha = 0
+    for i in range(len(alpha_val)):
+        print("Tuning slphs")
+        print(f'Param_val:{alpha_val[i]}')
+        als = ALS(maxIter=10, regParam=0.0001, rank=best_rank, alpha=alpha_val[i], userCol="user_id", itemCol="rmsid_int",
+                  ratingCol="ratings",
+                  coldStartStrategy="drop", implicitPrefs=True)
+        model = als.fit(train_data)
+
+        # making recommendations
+        user_recs_v = model.recommendForUserSubset(val_data_1, 100)
+        user_recs_v = user_recs_v.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+        user_final_v = val_data.join(user_recs_v, on="user_id", how="left")
+        map_val, mrr_val = evaluator(user_final_v)
+        print(f'MAP:{map_val}, MRR:{mrr_val}')
+        if map_val <= best_map:
+            best_map = map_val
+            best_mrr = mrr_val
+            best_alpha = alpha_val[i]
+            model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+
+    #Looping through values of regularization parameters
+    best_reg = 0
+    for i in range(len(reg_val)):
+        print("Tuning reg val")
+        print(f'Param_val:{reg_val[i]}')
+        als = ALS(maxIter=10, regParam=reg_val[i], rank=best_rank, alpha=best_alpha, userCol="user_id",
+                  itemCol="rmsid_int",
+                  ratingCol="ratings",
+                  coldStartStrategy="drop", implicitPrefs=True)
+        model = als.fit(train_data)
+
+        # making recommendations
+        user_recs_v = model.recommendForUserSubset(val_data_1, 100)
+        user_recs_v = user_recs_v.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
+        user_final_v = val_data.join(user_recs_v, on="user_id", how="left")
+        map_val, mrr_val = evaluator(user_final_v)
+        print(f'MAP:{map_val}, MRR:{mrr_val}')
+        if map_val <= best_map:
+            best_map_r = map_val
+            best_mrr = mrr_val
+            best_reg = reg_val[i]
+            model.write().overwrite().save(f'hdfs:/user/ss16270_nyu_edu/als_model')
+
+    #Load the best model
+    model = ALSModel.load(f'hdfs:/user/ss16270_nyu_edu/als_model')
+
+    #Transforming test data and making predictions
     test_data_1 = test_data_1.repartition(50, "user_id")
     user_recs = model.recommendForUserSubset(test_data_1,100)
-    # #
-    print("Converting recs")
+
     user_recs = user_recs.repartition(50,"user_id")
     user_recs = user_recs.withColumn("recommendations", col("recommendations").getField("rmsid_int"))
 
-    print("Joining")
     user_final = test_data.join(user_recs,on="user_id",how="left")
     user_final = user_final.repartition(50,"user_id")
 
-    print("Mapping")
-    user_final_1 = user_final.rdd.map(lambda x:(x[1],x[2]))
-
-    #map_val, mrr_val = evaluator(user_final)
-    print("Metrics")
-    metric = RankingMetrics(user_final_1)
-    print(f"MAP is {metric.meanAveragePrecision}")
-    #print(f"MAP is:{map_val}, MRR is:{mrr_val}")
+    map_val, mrr_val = evaluator(user_final)
+    print(f"MAP is:{map_val}, MRR is:{mrr_val}")
     end = time.time()
 
     print(f"Total time for execution:{end - start}")
